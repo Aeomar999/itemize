@@ -1,16 +1,16 @@
-import { Schema, Type } from "@google/generative-ai"
+import { Schema, SchemaType } from "@google/generative-ai"
 
 const FieldSchema: Schema = {
-  type: Type.OBJECT,
+  type: SchemaType.OBJECT,
   properties: {
-    value: { type: Type.STRING, nullable: true },
-    confidence: { type: Type.NUMBER },
+    value: { type: SchemaType.STRING, nullable: true },
+    confidence: { type: SchemaType.NUMBER },
   },
   required: ["value", "confidence"],
 }
 
 export const ItemizeExtractionSchema: Schema = {
-  type: Type.OBJECT,
+  type: SchemaType.OBJECT,
   properties: {
     barcode: FieldSchema,
     categoryType: FieldSchema,
