@@ -1,11 +1,12 @@
 import { create } from 'zustand'
-import { IMDBRecord, IMDBFieldKey, FieldValue } from '@/types/imdb'
+import { IMDBRecord, IMDBFieldKey, FieldValue, MediaItem } from '@/types/imdb'
 
 interface ItemizeState {
   records: IMDBRecord[]
-  addRecord: (imageUrl: string, imageName: string) => string
+  addRecord: (mediaItems: MediaItem[]) => string
   updateRecord: (id: string, updates: Partial<IMDBRecord>) => void
   updateField: (id: string, field: IMDBFieldKey, value: string) => void
+  addMediaToRecord: (id: string, mediaItem: MediaItem) => void
   removeRecord: (id: string) => void
   clearSession: () => void
   recalculateNeedsReview: (id: string) => void
@@ -31,12 +32,11 @@ const createEmptyFields = () => {
 export const useItemizeStore = create<ItemizeState>((set, get) => ({
   records: [],
 
-  addRecord: (imageUrl, imageName) => {
+  addRecord: (mediaItems) => {
     const id = crypto.randomUUID()
     const newRecord: IMDBRecord = {
       id,
-      imageUrl,
-      imageName,
+      media: mediaItems,
       status: "queued",
       fields: createEmptyFields(),
       needsReview: false,
@@ -50,6 +50,16 @@ export const useItemizeStore = create<ItemizeState>((set, get) => ({
     }))
 
     return id
+  },
+
+  addMediaToRecord: (id, mediaItem) => {
+    set((state) => ({
+      records: state.records.map((r) => 
+        r.id === id 
+          ? { ...r, media: [...r.media, mediaItem], status: "queued" } 
+          : r
+      )
+    }))
   },
 
   updateRecord: (id, updates) => {

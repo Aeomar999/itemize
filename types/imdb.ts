@@ -5,10 +5,16 @@ export interface FieldValue {
   isValid: boolean
 }
 
+export interface MediaItem {
+  url: string
+  name: string
+  type: string // "image" or "video"
+}
+
 export interface IMDBRecord {
   id: string
-  imageUrl: string          // blob: Object URL, client-side only
-  imageName: string
+  media: MediaItem[]        // supports multiple images or videos
+
   status: "queued" | "processing" | "done" | "error"
   fields: {
     barcode:             FieldValue

@@ -6,8 +6,9 @@ import { TrashIcon, ArrowPathIcon } from "@heroicons/react/24/outline"
 import { ConfidenceBadge } from "./ConfidenceBadge"
 import { DuplicateWarning } from "./DuplicateWarning"
 import { dummyExtract } from "@/lib/dummy_extract"
+import { extractItemizeData } from "@/lib/extract"
 import { PencilSquareIcon } from "@heroicons/react/20/solid"
-import { useState } from "react"
+import { useState, useRef } from "react"
 
 interface Props {
   record: IMDBRecord
@@ -22,6 +23,30 @@ export function TableRow({ record }: Props) {
 
   const [editingField, setEditingField] = useState<IMDBFieldKey | null>(null)
   const [editValue, setEditValue] = useState<string>("")
+  const fileInputRef = useRef<HTMLInputElement>(null)
+  const addMediaToRecord = useItemizeStore(state => state.addMediaToRecord)
+
+  const handleAddMedia = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files.length > 0) {
+      const file = e.target.files[0]
+      const isVideo = file.type.startsWith("video/")
+      const newMedia = { url: URL.createObjectURL(file), name: file.name, type: isVideo ? "video" : "image" }
+      
+      addMediaToRecord(record.id, newMedia)
+      
+      const allMedia = [...record.media, newMedia]
+      
+      try {
+        const result = await extractItemizeData(record.id, allMedia)
+        updateRecord(record.id, result)
+      } catch (err: any) {
+        updateRecord(record.id, { status: "error", error: err.message || "Failed to extract with new media" })
+      }
+      
+      recalculateNeedsReview(record.id)
+      recalculateDuplicates()
+    }
+  }
 
   const startEdit = (field: IMDBFieldKey, value: string) => {
     setEditingField(field)
@@ -47,13 +72,9 @@ export function TableRow({ record }: Props) {
   const handleRetry = async () => {
     updateRecord(record.id, { status: "processing", error: null })
     try {
-      const res = await fetch(record.imageUrl)
-      const blob = await res.blob()
-      const file = new File([blob], record.imageName, { type: blob.type })
-      
-      const result = await dummyExtract(record.id, file)
+      const result = await extractItemizeData(record.id, record.media)
       updateRecord(record.id, result)
-    } catch (err) {
+    } catch {
       updateRecord(record.id, { status: "error", error: "Retry failed" })
     }
     recalculateNeedsReview(record.id)
@@ -142,23 +163,49 @@ export function TableRow({ record }: Props) {
         className={`group transition-colors even:bg-slate-50 odd:bg-white relative`}
       >
         <td className={`px-4 py-3 sticky left-0 z-10 bg-inherit border-r border-slate-200 align-top ${borderLeftClass}`}>
-          <div className="relative">
-            <div 
-              className="w-16 h-16 rounded overflow-hidden border border-slate-200 cursor-zoom-in"
-              onClick={() => window.open(record.imageUrl, "_blank")}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img 
-                src={record.imageUrl} 
-                alt={record.imageName} 
-                className="w-full h-full object-cover hover:scale-105 transition-transform"
-              />
+          <div className="flex flex-col items-center gap-2">
+            <div className="relative">
+              <div 
+                className="w-16 h-16 rounded overflow-hidden border border-slate-200 cursor-zoom-in bg-slate-100 flex items-center justify-center"
+                onClick={() => window.open(record.media[0]?.url, "_blank")}
+              >
+                {record.media[0]?.type === "video" ? (
+                  <span className="text-xs font-semibold text-slate-500">VID</span>
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img 
+                    src={record.media[0]?.url} 
+                    alt={record.media[0]?.name} 
+                    className="w-full h-full object-cover hover:scale-105 transition-transform"
+                  />
+                )}
+              </div>
+              {record.media.length > 1 && (
+                <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm border-2 border-white">
+                  +{record.media.length - 1}
+                </div>
+              )}
+              {record.needsReview && record.status !== "error" && (
+                <span className="absolute -bottom-2 -left-1 text-[9px] font-bold bg-yellow-400 text-yellow-900 px-1 rounded shadow-sm">
+                  ⚠ REVIEW
+                </span>
+              )}
             </div>
-            {record.needsReview && record.status !== "error" && (
-              <span className="absolute -bottom-2 -left-1 text-[9px] font-bold bg-yellow-400 text-yellow-900 px-1 rounded shadow-sm">
-                ⚠ REVIEW
-              </span>
-            )}
+            
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="text-[10px] font-semibold text-slate-500 bg-white border border-slate-200 px-2 py-1 rounded hover:bg-slate-50 transition-colors w-full flex items-center justify-center gap-1 shadow-sm"
+              disabled={record.status === "processing"}
+            >
+              <span>➕ Media</span>
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef} 
+              className="hidden" 
+              accept="image/*,video/mp4,video/quicktime,video/webm"
+              onChange={handleAddMedia} 
+            />
           </div>
         </td>
         

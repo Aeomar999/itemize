@@ -23,8 +23,6 @@ export function UploadQueue() {
 
   if (!isVisible || records.length === 0) return null
 
-  const queued = records.filter(r => r.status === "queued").length
-  const processing = records.filter(r => r.status === "processing").length
   const done = records.filter(r => r.status === "done").length
   const error = records.filter(r => r.status === "error").length
 
@@ -51,12 +49,21 @@ export function UploadQueue() {
         {records.map(record => (
           <div key={record.id} className="flex items-center justify-between py-2 border-b border-slate-50 last:border-0">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded overflow-hidden bg-slate-100 flex-shrink-0">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src={record.imageUrl} alt={record.imageName} className="w-full h-full object-cover" />
+              <div className="w-10 h-10 rounded overflow-hidden bg-slate-100 flex-shrink-0 flex items-center justify-center relative">
+                {record.media[0]?.type === "video" ? (
+                  <span className="text-xs font-semibold text-slate-500">VID</span>
+                ) : (
+                  /* eslint-disable-next-line @next/next/no-img-element */
+                  <img src={record.media[0]?.url} alt={record.media[0]?.name} className="w-full h-full object-cover" />
+                )}
+                {record.media.length > 1 && (
+                  <div className="absolute -bottom-1 -right-1 bg-blue-600 text-white text-[9px] font-bold px-1 rounded-sm">
+                    +{record.media.length - 1}
+                  </div>
+                )}
               </div>
               <span className="text-sm text-slate-700 font-medium truncate max-w-[200px] sm:max-w-[400px]">
-                {record.imageName.length > 24 ? record.imageName.substring(0, 24) + '...' : record.imageName}
+                {record.media[0]?.name?.length > 24 ? record.media[0].name.substring(0, 24) + '...' : record.media[0]?.name}
               </span>
             </div>
             

@@ -3,7 +3,7 @@
 import { useCallback, useRef, useState } from "react"
 import { PhotoIcon, CameraIcon, CloudArrowUpIcon } from "@heroicons/react/24/outline"
 import { useItemizeStore } from "@/store/useItemizeStore"
-import { dummyExtract } from "@/lib/dummy_extract"
+import { extractItemizeData } from "@/lib/extract"
 import { cn } from "@/lib/utils"
 
 interface UploadZoneProps {
@@ -28,18 +28,20 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
 
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
-      if (!file.type.startsWith("image/")) continue
+      const isVideo = file.type.startsWith("video/")
+      if (!file.type.startsWith("image/") && !isVideo) continue
 
-      const imageUrl = URL.createObjectURL(file)
-      const id = addRecord(imageUrl, file.name)
+      const url = URL.createObjectURL(file)
+      const media = [{ url, name: file.name, type: isVideo ? "video" : "image" }]
+      const id = addRecord(media)
 
       updateRecord(id, { status: "processing" })
 
       try {
-        const result = await dummyExtract(id, file)
+        const result = await extractItemizeData(id, media)
         updateRecord(id, result)
-      } catch (error) {
-        updateRecord(id, { status: "error", error: "Extraction failed" })
+      } catch (err: any) {
+        updateRecord(id, { status: "error", error: err.message || "Extraction failed" })
       }
 
       recalculateNeedsReview(id)
@@ -47,23 +49,23 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
     }
   }
 
-  const handleDragOver = useCallback((e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(true)
-  }, [])
+  }
 
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
+  const handleDragLeave = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
-  }, [])
+  }
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault()
     setIsDragging(false)
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       processFiles(e.dataTransfer.files)
     }
-  }, [])
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -97,14 +99,14 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
         onChange={handleChange} 
         className="hidden" 
         multiple 
-        accept="image/*"
+        accept="image/*,video/mp4,video/quicktime,video/webm"
       />
       <input 
         type="file" 
         ref={cameraInputRef} 
         onChange={handleChange} 
         className="hidden" 
-        accept="image/*"
+        accept="image/*,video/mp4,video/quicktime,video/webm"
         capture="environment"
       />
 
