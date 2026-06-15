@@ -7,6 +7,7 @@ import { ConfidenceBadge } from "./ConfidenceBadge"
 import { DuplicateWarning } from "./DuplicateWarning"
 import { dummyExtract } from "@/lib/dummy_extract"
 import { PencilSquareIcon } from "@heroicons/react/20/solid"
+import { useState } from "react"
 
 interface Props {
   record: IMDBRecord
@@ -19,14 +20,33 @@ export function TableRow({ record }: Props) {
   const recalculateNeedsReview = useItemizeStore(state => state.recalculateNeedsReview)
   const recalculateDuplicates = useItemizeStore(state => state.recalculateDuplicates)
 
-  const handleEdit = (field: IMDBFieldKey, value: string) => {
-    updateField(record.id, field, value)
+  const [editingField, setEditingField] = useState<IMDBFieldKey | null>(null)
+  const [editValue, setEditValue] = useState<string>("")
+
+  const startEdit = (field: IMDBFieldKey, value: string) => {
+    setEditingField(field)
+    setEditValue(value)
+  }
+
+  const saveEdit = () => {
+    if (editingField) {
+      updateField(record.id, editingField, editValue)
+    }
+    setEditingField(null)
+  }
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === "Tab") {
+      e.preventDefault()
+      saveEdit()
+    } else if (e.key === "Escape") {
+      setEditingField(null)
+    }
   }
 
   const handleRetry = async () => {
     updateRecord(record.id, { status: "processing", error: null })
     try {
-      // Simulate file since we only have the blob URL
       const res = await fetch(record.imageUrl)
       const blob = await res.blob()
       const file = new File([blob], record.imageName, { type: blob.type })
@@ -62,22 +82,34 @@ export function TableRow({ record }: Props) {
 
     const isEdited = data.isEdited
     const cellBgClass = isEdited ? "bg-blue-50/50" : ""
+    const isCurrentlyEditing = editingField === field
 
     return (
-      <td className={`px-4 py-3 align-top ${cellBgClass} transition-colors group-hover:bg-slate-50`}>
-        <div className="flex flex-col gap-1.5 relative">
-          <input 
-            type="text" 
-            value={data.value || ""}
-            onChange={(e) => handleEdit(field, e.target.value)}
-            placeholder={placeholder}
-            className={`w-full min-w-[120px] px-2 py-1 text-sm bg-transparent border-b focus:outline-none transition-colors
-              ${(!data.isValid || data.confidence < 0.6) && !isEdited
-                ? 'border-red-300 focus:border-red-500' 
-                : 'border-transparent hover:border-slate-300 focus:border-slate-900'}
-            `}
-          />
-          <div className="flex justify-end pr-2">
+      <td 
+        className={`px-4 py-3 align-top ${cellBgClass} transition-colors group-hover:bg-slate-50 relative`}
+        onClick={() => {
+          if (!isCurrentlyEditing) startEdit(field, data.value || "")
+        }}
+      >
+        <div className="flex flex-col gap-1.5 min-h-[44px]">
+          {isCurrentlyEditing ? (
+            <input 
+              autoFocus
+              type="text" 
+              value={editValue}
+              onChange={(e) => setEditValue(e.target.value)}
+              onKeyDown={handleKeyDown}
+              onBlur={saveEdit}
+              placeholder={placeholder}
+              className={`w-full min-w-[120px] px-2 py-1 text-sm bg-white border-b-2 border-blue-500 shadow-sm focus:outline-none`}
+            />
+          ) : (
+            <div className="w-full min-w-[120px] px-2 py-1 text-sm cursor-pointer hover:bg-black/5 rounded transition-colors text-slate-800">
+              {data.value || <span className="text-slate-400 italic">{placeholder}</span>}
+            </div>
+          )}
+
+          <div className="flex justify-end pr-2 pointer-events-none">
             {isEdited ? (
               <span className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-wide uppercase text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">
                 <PencilSquareIcon className="w-3 h-3" />
@@ -94,16 +126,21 @@ export function TableRow({ record }: Props) {
 
   return (
     <>
-      {/* Duplicate warning row (inserted before actual row if applicable) */}
       {record.duplicateFlag !== "none" && (
         <tr className="bg-white">
-          <td colSpan={12} className="p-0">
-            <DuplicateWarning duplicateStatus={record.duplicateFlag} />
+          <td colSpan={12} className="p-0 border-b border-slate-100">
+            <DuplicateWarning 
+              duplicateStatus={record.duplicateFlag} 
+              duplicateOf={record.duplicateOf}
+            />
           </td>
         </tr>
       )}
 
-      <tr className={`group transition-colors even:bg-slate-50 odd:bg-white relative`}>
+      <tr 
+        id={record.id}
+        className={`group transition-colors even:bg-slate-50 odd:bg-white relative`}
+      >
         <td className={`px-4 py-3 sticky left-0 z-10 bg-inherit border-r border-slate-200 align-top ${borderLeftClass}`}>
           <div className="relative">
             <div 
@@ -146,8 +183,8 @@ export function TableRow({ record }: Props) {
           </>
         )}
 
-        <td className="px-4 py-3 text-right align-top border-l border-slate-100">
-          <div className="flex flex-col items-end gap-2">
+        <td className="px-4 py-3 text-right align-top border-l border-slate-100 bg-inherit">
+          <div className="flex flex-col items-end gap-2 h-full">
             {record.status === "error" ? (
               <button 
                 onClick={handleRetry}

@@ -21,6 +21,11 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
   const [isDragging, setIsDragging] = useState(false)
 
   const processFiles = async (files: FileList | File[]) => {
+    if (files.length > 20) {
+      alert("Too many images — maximum 20 per session")
+      return
+    }
+
     for (let i = 0; i < files.length; i++) {
       const file = files[i]
       if (!file.type.startsWith("image/")) continue

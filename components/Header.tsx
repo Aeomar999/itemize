@@ -23,7 +23,11 @@ export function Header() {
 
       {records.length > 0 && (
         <button
-          onClick={clearSession}
+          onClick={() => {
+            if (window.confirm("This will remove all products. Are you sure?")) {
+              clearSession()
+            }
+          }}
           className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-red-600 px-3 py-1.5 rounded-md hover:bg-red-50 transition-colors"
         >
           <TrashIcon className="w-4 h-4" />
