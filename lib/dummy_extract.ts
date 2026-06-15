@@ -1,6 +1,6 @@
 import { IMDBRecord, FieldValue } from '@/types/imdb'
 
-function createDummyField(value: string, confidence: number, isValid = true): FieldValue {
+function createDummyField(value: string | null, confidence: number, isValid = true): FieldValue {
   return { value, confidence, isEdited: false, isValid }
 }
 
