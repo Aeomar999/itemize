@@ -4,7 +4,7 @@ import { ItemizeExtractionSchema } from "@/lib/schema"
 import { SYSTEM_INSTRUCTION, buildPromptWithBarcode } from "@/lib/prompt"
 import { normalizeWeight, normalizePackaging, normalizeCountry } from "@/lib/normalize"
 import { validateBarcode } from "@/lib/validate"
-import { NormalizedFields, ValidatedFields, ValidatedFieldResult } from "@/types/imdb"
+import { NormalizedFields, ValidatedFields } from "@/types/imdb"
 
 // Ensure we have an API key
 const apiKey = process.env.GEMINI_API_KEY
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     let rawJson: NormalizedFields
     try {
       rawJson = JSON.parse(responseText) as NormalizedFields
-    } catch (e) {
+    } catch {
       // In case of parsing failure (which is rare with structured outputs)
       console.error("Failed to parse Gemini output:", responseText)
       return NextResponse.json({ error: "Failed to parse structured JSON from model" }, { status: 500 })
@@ -132,10 +132,10 @@ export async function POST(request: NextRequest) {
       fields: validatedFields
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     console.error("Error in /api/extract:", error)
     return NextResponse.json(
-      { error: error?.message || "Internal server error during extraction" },
+      { error: error instanceof Error ? error.message : "Internal server error during extraction" },
       { status: 500 }
     )
   }

@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { PhotoIcon, CameraIcon, CloudArrowUpIcon } from "@heroicons/react/24/outline"
 import { useItemizeStore } from "@/store/useItemizeStore"
 import { extractItemizeData } from "@/lib/extract"
@@ -40,8 +40,8 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
       try {
         const result = await extractItemizeData(id, media)
         updateRecord(id, result)
-      } catch (err: any) {
-        updateRecord(id, { status: "error", error: err.message || "Extraction failed" })
+      } catch (err: unknown) {
+        updateRecord(id, { status: "error", error: err instanceof Error ? err.message : "Extraction failed" })
       }
 
       recalculateNeedsReview(id)

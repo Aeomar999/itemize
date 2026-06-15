@@ -5,7 +5,6 @@ import { useItemizeStore } from "@/store/useItemizeStore"
 import { TrashIcon, ArrowPathIcon } from "@heroicons/react/24/outline"
 import { ConfidenceBadge } from "./ConfidenceBadge"
 import { DuplicateWarning } from "./DuplicateWarning"
-import { dummyExtract } from "@/lib/dummy_extract"
 import { extractItemizeData } from "@/lib/extract"
 import { PencilSquareIcon } from "@heroicons/react/20/solid"
 import { useState, useRef } from "react"
@@ -39,8 +38,8 @@ export function TableRow({ record }: Props) {
       try {
         const result = await extractItemizeData(record.id, allMedia)
         updateRecord(record.id, result)
-      } catch (err: any) {
-        updateRecord(record.id, { status: "error", error: err.message || "Failed to extract with new media" })
+      } catch (err: unknown) {
+        updateRecord(record.id, { status: "error", error: err instanceof Error ? err.message : "Failed to extract with new media" })
       }
       
       recalculateNeedsReview(record.id)
