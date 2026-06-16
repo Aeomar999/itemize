@@ -1,100 +1,106 @@
 /**
- * Normalizes weight strings to standard IMDB formats: "NNN g", "NNN mL", "NNN kg", "NNN L"
+ * Normalizes weight strings to competition format: "250G", "500ML", "1.5KG", "1L"
+ * Number immediately followed by uppercase unit, no space.
  */
 export function normalizeWeight(raw: string | null): string | null {
   if (!raw) return null
 
   let str = raw.toLowerCase().replace(/\s+/g, "")
-  let value = parseFloat(str)
-  
-  if (isNaN(value)) return raw // Fallback if we can't parse a number
 
-  // If dual weight like "2x250g", try to parse total
+  // Handle multipack: "2x250g" → "500g"
   const dualMatch = str.match(/(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)/)
   if (dualMatch) {
-    value = parseFloat(dualMatch[1]) * parseFloat(dualMatch[2])
-    // Replace the front part so we just look for unit at the end
-    str = str.replace(/(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)/, value.toString())
+    const total = parseFloat(dualMatch[1]) * parseFloat(dualMatch[2])
+    str = str.replace(/(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)/, total.toString())
   }
 
-  // Grams
-  if (str.endsWith("g") && !str.endsWith("kg")) {
-    return `${value} g`
+  const value = parseFloat(str)
+  if (isNaN(value)) return raw.toUpperCase()
+
+  if ((str.endsWith("ml") || str.endsWith("milliliters") || str.endsWith("millilitres"))) {
+    // Keep as ML (do not convert to L — competition format uses "909ML" not "0.9L")
+    return `${value}ML`
   }
-  
-  // Kilograms
+
+  if (str.endsWith("l") && !str.endsWith("ml")) {
+    return `${value}L`
+  }
+
   if (str.endsWith("kg")) {
-    if (value < 1) {
-      return `${value * 1000} g` // Convert sub-1kg to grams
-    }
-    return `${value} kg`
-  }
-  
-  // Milliliters
-  if (str.endsWith("ml") || str.endsWith("milliliters") || str.endsWith("millilitres")) {
-    if (value >= 1000) {
-      return `${value / 1000} L` // Convert >= 1000mL to Litres
-    }
-    return `${value} mL`
+    // Keep as KG (competition uses "2.2KG" not "2200G")
+    return `${value}KG`
   }
 
-  // Liters
-  if (str.endsWith("l") || str.endsWith("litre") || str.endsWith("liters") || str.endsWith("litres")) {
-    return `${value} L`
+  if (str.endsWith("g") && !str.endsWith("kg")) {
+    return `${value}G`
   }
 
-  // If it's a number but no recognizable unit, just return original to be safe
-  return raw
+  return raw.toUpperCase()
 }
 
 /**
- * Normalizes packaging types to the allowed vocabulary
+ * Normalizes packaging type to competition vocabulary (uppercase)
  */
 export function normalizePackaging(raw: string | null): string | null {
   if (!raw) return null
-  
-  const str = raw.toLowerCase().trim()
-  const validTypes = ["Bottle", "Can", "Box", "Sachet", "Pouch", "Jar", "Tube", "Carton", "Bag", "Tray", "Other"]
-  const validLower = validTypes.map(t => t.toLowerCase())
 
-  const index = validLower.indexOf(str)
-  if (index !== -1) {
-    return validTypes[index]
-  }
+  const str = raw.toUpperCase().trim()
 
-  // Basic fuzzing for common variants
-  if (str.includes("bottle")) return "Bottle"
-  if (str.includes("can") || str.includes("tin")) return "Can"
-  if (str.includes("box")) return "Box"
-  if (str.includes("sachet") || str.includes("packet")) return "Sachet"
-  if (str.includes("pouch")) return "Pouch"
-  if (str.includes("jar") || str.includes("glass")) return "Jar"
-  if (str.includes("tube")) return "Tube"
-  if (str.includes("carton") || str.includes("tetrapak") || str.includes("tetra pak")) return "Carton"
-  if (str.includes("bag")) return "Bag"
-  if (str.includes("tray")) return "Tray"
+  const exact = [
+    "TUB", "GLASS JAR", "SACHET", "PLASTIC BOTTLE", "BOTTLE", "CAN",
+    "BOX", "PLASTIC BAG", "TIN", "WRAPPED", "POUCH", "TETRA PAK",
+    "CARTON", "JAR", "OTHER"
+  ]
+  if (exact.includes(str)) return str
 
-  return "Other" // Fallback to "Other" as per schema instruction
+  // Fuzzy matching
+  if (str.includes("TETRA") || str.includes("TETRAPAK")) return "TETRA PAK"
+  if (str.includes("GLASS")) return "GLASS JAR"
+  if (str.includes("PLASTIC BOTTLE") || (str.includes("PLASTIC") && str.includes("BOTTLE"))) return "PLASTIC BOTTLE"
+  if (str.includes("PLASTIC BAG") || (str.includes("PLASTIC") && str.includes("BAG"))) return "PLASTIC BAG"
+  if (str.includes("TUB")) return "TUB"
+  if (str.includes("SACHET") || str.includes("PACKET")) return "SACHET"
+  if (str.includes("POUCH")) return "POUCH"
+  if (str.includes("BOTTLE")) return "BOTTLE"
+  if (str.includes("CAN") || str.includes("BEVERAGE CAN")) return "CAN"
+  if (str.includes("TIN")) return "TIN"
+  if (str.includes("BOX") || str.includes("CARTON") || str.includes("CARDBOARD")) return "BOX"
+  if (str.includes("WRAP")) return "WRAPPED"
+  if (str.includes("JAR")) return "JAR"
+  if (str.includes("BAG")) return "PLASTIC BAG"
+
+  return "OTHER"
 }
 
 /**
- * Normalizes country of origin to full English names
+ * Normalizes country to full uppercase English name
  */
 export function normalizeCountry(raw: string | null): string | null {
   if (!raw) return null
 
-  const str = raw.trim()
-  const lower = str.toLowerCase()
+  const str = raw.trim().toUpperCase()
 
-  // Standard abbreviation expansions
-  if (lower === "usa" || lower === "u.s.a" || lower === "u.s.a.") return "United States"
-  if (lower === "uk" || lower === "u.k" || lower === "u.k.") return "United Kingdom"
-  if (lower === "rsa" || lower === "za") return "South Africa"
-  if (lower === "prc") return "China"
-  if (lower === "uae") return "United Arab Emirates"
+  const map: Record<string, string> = {
+    "USA": "UNITED STATES",
+    "U.S.A": "UNITED STATES",
+    "U.S.A.": "UNITED STATES",
+    "US": "UNITED STATES",
+    "UK": "UNITED KINGDOM",
+    "U.K": "UNITED KINGDOM",
+    "U.K.": "UNITED KINGDOM",
+    "GREAT BRITAIN": "UNITED KINGDOM",
+    "GB": "UNITED KINGDOM",
+    "RSA": "SOUTH AFRICA",
+    "ZA": "SOUTH AFRICA",
+    "PRC": "CHINA",
+    "P.R.C": "CHINA",
+    "P.R.C.": "CHINA",
+    "UAE": "UNITED ARAB EMIRATES",
+    "U.A.E": "UNITED ARAB EMIRATES",
+    "CI": "COTE D'IVOIRE",
+    "IVORY COAST": "COTE D'IVOIRE",
+    "CÔTE D'IVOIRE": "COTE D'IVOIRE",
+  }
 
-  // Title Case logic for normal strings
-  return str.split(" ")
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(" ")
+  return map[str] ?? str
 }

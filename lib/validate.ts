@@ -1,24 +1,8 @@
 /**
- * Validates a barcode string to ensure it follows standard retail barcode formats
- * EAN-8 (8 digits)
- * UPC-A (12 digits)
- * EAN-13 (13 digits)
- * GTIN-14 (14 digits)
+ * Validates a barcode string (EAN-8, EAN-13, UPC-A, GTIN-14)
  */
 export function validateBarcode(barcode: string | null): boolean {
   if (!barcode) return false
-
-  // Must be only digits
-  if (!/^\d+$/.test(barcode)) {
-    return false
-  }
-
-  const length = barcode.length
-  
-  // Valid lengths for standard retail barcodes
-  if (length !== 8 && length !== 12 && length !== 13 && length !== 14) {
-    return false
-  }
-
-  return true
+  const digits = barcode.replace(/\D/g, "")
+  return [8, 12, 13, 14].includes(digits.length)
 }

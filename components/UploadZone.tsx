@@ -1,13 +1,27 @@
 "use client"
 
-import { useRef, useState } from "react"
+import { useCallback, useRef, useState } from "react"
 import { PhotoIcon, CameraIcon, CloudArrowUpIcon } from "@heroicons/react/24/outline"
 import { useItemizeStore } from "@/store/useItemizeStore"
-import { extractItemizeData } from "@/lib/extract"
 import { cn } from "@/lib/utils"
+import { ValidatedFields, IMDBFieldKey } from "@/types/imdb"
 
 interface UploadZoneProps {
   isCompressed: boolean
+}
+
+function mapApiFieldsToRecord(fields: ValidatedFields): ReturnType<typeof useItemizeStore.getState>["records"][0]["fields"] {
+  const mapped = {} as Record<string, { value: string | null; confidence: number; isEdited: boolean; isValid: boolean }>
+  for (const key of Object.keys(fields) as IMDBFieldKey[]) {
+    const f = fields[key]
+    mapped[key] = {
+      value: f.value,
+      confidence: f.confidence,
+      isEdited: false,
+      isValid: f.isValid,
+    }
+  }
+  return mapped as ReturnType<typeof useItemizeStore.getState>["records"][0]["fields"]
 }
 
 export function UploadZone({ isCompressed }: UploadZoneProps) {
@@ -17,31 +31,39 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
   const updateRecord = useItemizeStore(state => state.updateRecord)
   const recalculateNeedsReview = useItemizeStore(state => state.recalculateNeedsReview)
   const recalculateDuplicates = useItemizeStore(state => state.recalculateDuplicates)
-  
+
   const [isDragging, setIsDragging] = useState(false)
 
   const processFiles = async (files: FileList | File[]) => {
-    if (files.length > 20) {
+    const fileArray = Array.from(files).filter(f => f.type.startsWith("image/"))
+
+    if (fileArray.length === 0) return
+    if (fileArray.length > 20) {
       alert("Too many images — maximum 20 per session")
       return
     }
 
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i]
-      const isVideo = file.type.startsWith("video/")
-      if (!file.type.startsWith("image/") && !isVideo) continue
-
-      const url = URL.createObjectURL(file)
-      const media = [{ url, name: file.name, type: isVideo ? "video" : "image" }]
-      const id = addRecord(media)
-
+    for (const file of fileArray) {
+      const mediaItem = { url: URL.createObjectURL(file), name: file.name, type: "image" }
+      const id = addRecord([mediaItem])
       updateRecord(id, { status: "processing" })
 
       try {
-        const result = await extractItemizeData(id, media)
-        updateRecord(id, result)
-      } catch (err: unknown) {
-        updateRecord(id, { status: "error", error: err instanceof Error ? err.message : "Extraction failed" })
+        const formData = new FormData()
+        formData.append("media", file)
+
+        const response = await fetch("/api/extract", { method: "POST", body: formData })
+
+        if (!response.ok) {
+          const err = await response.json().catch(() => ({ error: "Server error" }))
+          throw new Error(err.error || `HTTP ${response.status}`)
+        }
+
+        const { fields } = (await response.json()) as { fields: ValidatedFields }
+        updateRecord(id, { status: "done", fields: mapApiFieldsToRecord(fields) })
+      } catch (error) {
+        const message = error instanceof Error ? error.message : "Extraction failed"
+        updateRecord(id, { status: "error", error: message })
       }
 
       recalculateNeedsReview(id)
@@ -49,26 +71,15 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
     }
   }
 
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }
-
-  const handleDragLeave = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      processFiles(e.dataTransfer.files)
-    }
-  }
+  const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(true) }, [])
+  const handleDragLeave = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(false) }, [])
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault(); setIsDragging(false)
+    if (e.dataTransfer.files?.length) processFiles(e.dataTransfer.files)
+  }, [])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files && e.target.files.length > 0) {
+    if (e.target.files?.length) {
       processFiles(e.target.files)
       if (fileInputRef.current) fileInputRef.current.value = ""
       if (cameraInputRef.current) cameraInputRef.current.value = ""
@@ -76,7 +87,7 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
   }
 
   return (
-    <div 
+    <div
       className={cn(
         "w-full max-w-3xl mx-auto mt-8 border rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors group relative overflow-hidden",
         isCompressed ? "py-4 px-6 border-slate-200 bg-white shadow-sm flex-row justify-between" : "p-12 border-dashed flex-col",
@@ -93,22 +104,8 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
         </div>
       )}
 
-      <input 
-        type="file" 
-        ref={fileInputRef} 
-        onChange={handleChange} 
-        className="hidden" 
-        multiple 
-        accept="image/*,video/mp4,video/quicktime,video/webm"
-      />
-      <input 
-        type="file" 
-        ref={cameraInputRef} 
-        onChange={handleChange} 
-        className="hidden" 
-        accept="image/*,video/mp4,video/quicktime,video/webm"
-        capture="environment"
-      />
+      <input type="file" ref={fileInputRef} onChange={handleChange} className="hidden" multiple accept="image/*" />
+      <input type="file" ref={cameraInputRef} onChange={handleChange} className="hidden" accept="image/*" capture="environment" />
 
       <div className={cn("flex items-center", isCompressed ? "flex-row gap-4" : "flex-col")}>
         {!isCompressed && (
@@ -116,14 +113,9 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
             "w-12 h-12 mb-4 rounded-md flex items-center justify-center transition-colors",
             isDragging ? "bg-blue-100 text-blue-600" : "bg-white border border-slate-200 text-slate-500 shadow-sm"
           )}>
-            {isDragging ? (
-              <CloudArrowUpIcon className="w-6 h-6" />
-            ) : (
-              <PhotoIcon className="w-6 h-6" />
-            )}
+            {isDragging ? <CloudArrowUpIcon className="w-6 h-6" /> : <PhotoIcon className="w-6 h-6" />}
           </div>
         )}
-        
         <div>
           <h2 className={cn("font-medium text-slate-900", isCompressed ? "text-base" : "text-lg text-center")}>
             {!isCompressed && isDragging ? "Drop images to extract" : "Select product images"}
@@ -133,16 +125,16 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
           </p>
         </div>
       </div>
-      
+
       <div className={cn("flex gap-3", isCompressed ? "" : "mt-6")}>
-        <button 
-          onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click(); }}
+        <button
+          onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }}
           className="px-4 py-2 bg-slate-900 text-white rounded-md text-sm font-medium hover:bg-slate-800 transition-colors whitespace-nowrap"
         >
           {isCompressed ? "Add Images" : "Browse Files"}
         </button>
-        <button 
-          onClick={(e) => { e.stopPropagation(); cameraInputRef.current?.click(); }}
+        <button
+          onClick={(e) => { e.stopPropagation(); cameraInputRef.current?.click() }}
           className="sm:hidden px-4 py-2 bg-white text-slate-700 rounded-md text-sm font-medium border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-2 whitespace-nowrap"
         >
           <CameraIcon className="w-4 h-4" />

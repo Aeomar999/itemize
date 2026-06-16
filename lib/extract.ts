@@ -1,32 +1,35 @@
-import { IMDBRecord, MediaItem } from '@/types/imdb'
+import { ValidatedFields, MediaItem, IMDBRecord, IMDBFieldKey } from "@/types/imdb"
 
-export async function extractItemizeData(id: string, mediaItems: MediaItem[], barcodeOverride?: string | null): Promise<Partial<IMDBRecord>> {
-  const formData = new FormData()
-  
-  for (const media of mediaItems) {
-    const res = await fetch(media.url)
-    const blob = await res.blob()
-    formData.append("media", new File([blob], media.name, { type: blob.type }))
+export function mapApiFieldsToRecord(fields: ValidatedFields): IMDBRecord["fields"] {
+  const mapped = {} as Record<string, { value: string | null; confidence: number; isEdited: boolean; isValid: boolean }>
+  for (const key of Object.keys(fields) as IMDBFieldKey[]) {
+    const f = fields[key]
+    mapped[key] = { value: f.value, confidence: f.confidence, isEdited: false, isValid: f.isValid }
   }
+  return mapped as IMDBRecord["fields"]
+}
 
-  if (barcodeOverride) {
-    formData.append("barcodeOverride", barcodeOverride)
-  }
+export async function extractItemizeData(
+  _id: string,
+  mediaItems: MediaItem[]
+): Promise<{ status: "done" | "error"; fields?: IMDBRecord["fields"]; error?: string }> {
+  try {
+    const formData = new FormData()
+    for (const item of mediaItems) {
+      const res = await fetch(item.url)
+      const blob = await res.blob()
+      formData.append("media", new File([blob], item.name, { type: blob.type || "image/jpeg" }))
+    }
 
-  const response = await fetch("/api/extract", {
-    method: "POST",
-    body: formData,
-  })
+    const response = await fetch("/api/extract", { method: "POST", body: formData })
+    if (!response.ok) {
+      const err = await response.json().catch(() => ({ error: "Server error" }))
+      throw new Error(err.error || `HTTP ${response.status}`)
+    }
 
-  if (!response.ok) {
-    const errObj = await response.json().catch(() => ({}))
-    throw new Error(errObj.error || "Failed to extract data")
-  }
-
-  const data = await response.json()
-  
-  return {
-    status: "done",
-    fields: data.fields
+    const { fields } = (await response.json()) as { fields: ValidatedFields }
+    return { status: "done", fields: mapApiFieldsToRecord(fields) }
+  } catch (error) {
+    return { status: "error", error: error instanceof Error ? error.message : "Extraction failed" }
   }
 }

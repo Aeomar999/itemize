@@ -13,160 +13,115 @@ interface ItemizeState {
   recalculateDuplicates: () => void
 }
 
-const createEmptyFields = () => {
-  const emptyField: FieldValue = { value: null, confidence: 1.0, isEdited: false, isValid: true }
-  return {
-    barcode: { ...emptyField },
-    categoryType: { ...emptyField },
-    segmentType: { ...emptyField },
-    manufacturer: { ...emptyField },
-    brand: { ...emptyField },
-    productName: { ...emptyField },
-    weightAndUnit: { ...emptyField },
-    packagingType: { ...emptyField },
-    countryOfOrigin: { ...emptyField },
-    promotionalMessages: { ...emptyField }
-  }
-}
+const emptyField = (): FieldValue => ({ value: null, confidence: 1.0, isEdited: false, isValid: true })
+
+const createEmptyFields = () => ({
+  itemName:        emptyField(),
+  barcode:         emptyField(),
+  manufacturer:    emptyField(),
+  brand:           emptyField(),
+  weight:          emptyField(),
+  packagingType:   emptyField(),
+  country:         emptyField(),
+  variant:         emptyField(),
+  type:            emptyField(),
+  fragranceFlavor: emptyField(),
+  promotion:       emptyField(),
+  addons:          emptyField(),
+  tagline:         emptyField(),
+})
 
 export const useItemizeStore = create<ItemizeState>((set, get) => ({
   records: [],
 
   addRecord: (mediaItems) => {
     const id = crypto.randomUUID()
-    const newRecord: IMDBRecord = {
-      id,
-      media: mediaItems,
-      status: "queued",
-      fields: createEmptyFields(),
-      needsReview: false,
-      duplicateFlag: "none",
-      duplicateOf: null,
-      error: null
-    }
-
     set((state) => ({
-      records: [...state.records, newRecord]
+      records: [...state.records, {
+        id,
+        media: mediaItems,
+        status: "queued",
+        fields: createEmptyFields(),
+        needsReview: false,
+        duplicateFlag: "none",
+        duplicateOf: null,
+        error: null,
+      }]
     }))
-
     return id
   },
 
   addMediaToRecord: (id, mediaItem) => {
     set((state) => ({
-      records: state.records.map((r) => 
-        r.id === id 
-          ? { ...r, media: [...r.media, mediaItem], status: "queued" } 
-          : r
+      records: state.records.map((r) =>
+        r.id === id ? { ...r, media: [...r.media, mediaItem], status: "queued" } : r
       )
     }))
   },
 
   updateRecord: (id, updates) => {
     set((state) => ({
-      records: state.records.map((r) =>
-        r.id === id ? { ...r, ...updates } : r
-      )
+      records: state.records.map((r) => r.id === id ? { ...r, ...updates } : r)
     }))
   },
 
   updateField: (id, field, value) => {
-    set((state) => {
-      const records = state.records.map((r) => {
+    set((state) => ({
+      records: state.records.map((r) => {
         if (r.id !== id) return r
-        
-        const newFields = {
-          ...r.fields,
-          [field]: {
-            ...r.fields[field],
-            value,
-            isEdited: true,
-            isValid: true // Assume user edits resolve validity issues
+        return {
+          ...r,
+          fields: {
+            ...r.fields,
+            [field]: { ...r.fields[field], value, isEdited: true, isValid: true }
           }
         }
-
-        return { ...r, fields: newFields }
       })
-      return { records }
-    })
-    
+    }))
     get().recalculateNeedsReview(id)
     get().recalculateDuplicates()
   },
 
   removeRecord: (id) => {
-    set((state) => ({
-      records: state.records.filter((r) => r.id !== id)
-    }))
+    set((state) => ({ records: state.records.filter((r) => r.id !== id) }))
     get().recalculateDuplicates()
   },
 
-  clearSession: () => {
-    set({ records: [] })
-  },
+  clearSession: () => set({ records: [] }),
 
   recalculateNeedsReview: (id) => {
     set((state) => ({
       records: state.records.map(r => {
         if (r.id !== id) return r
-        
-        let needsReview = false
-        if (r.status === "error") needsReview = true
-        
-        // Check confidence < 0.60 or isValid === false
-        Object.values(r.fields).forEach(f => {
-          if (f.confidence < 0.60 || f.isValid === false) {
-            needsReview = true
-          }
-        })
-        
+        const needsReview = r.status === "error" ||
+          Object.values(r.fields).some(f => f.confidence < 0.60 || f.isValid === false)
         return { ...r, needsReview }
       })
     }))
   },
 
   recalculateDuplicates: () => {
-    // Simple naive duplicate detection
-    // EXACT: matching barcode
-    // POSSIBLE: matching brand + weightAndUnit
     set((state) => {
-      const records = [...state.records]
-      
-      // Reset flags
-      records.forEach(r => {
-        r.duplicateFlag = "none"
-        r.duplicateOf = null
-      })
-
+      const records: IMDBRecord[] = state.records.map(r => ({ ...r, duplicateFlag: "none" as const, duplicateOf: null }))
       for (let i = 0; i < records.length; i++) {
         for (let j = i + 1; j < records.length; j++) {
-          const r1 = records[i]
-          const r2 = records[j]
-          
+          const r1 = records[i], r2 = records[j]
           if (r1.status !== "done" || r2.status !== "done") continue
-
-          const bc1 = r1.fields.barcode.value
-          const bc2 = r2.fields.barcode.value
-
+          const bc1 = r1.fields.barcode.value, bc2 = r2.fields.barcode.value
           if (bc1 && bc2 && bc1 === bc2) {
-            r2.duplicateFlag = "exact"
-            r2.duplicateOf = r1.id
+            records[j] = { ...records[j], duplicateFlag: "exact" as const, duplicateOf: r1.id }
             continue
           }
-
           const b1 = r1.fields.brand.value?.toLowerCase()
           const b2 = r2.fields.brand.value?.toLowerCase()
-          const w1 = r1.fields.weightAndUnit.value?.toLowerCase()
-          const w2 = r2.fields.weightAndUnit.value?.toLowerCase()
-
+          const w1 = r1.fields.weight.value?.toLowerCase()
+          const w2 = r2.fields.weight.value?.toLowerCase()
           if (b1 && b2 && w1 && w2 && b1 === b2 && w1 === w2) {
-            r2.duplicateFlag = "possible"
-            r2.duplicateOf = r1.id
+            records[j] = { ...records[j], duplicateFlag: "possible" as const, duplicateOf: r1.id }
           }
         }
       }
-
       return { records }
     })
-  }
+  },
 }))
