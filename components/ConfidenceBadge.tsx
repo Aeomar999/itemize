@@ -12,7 +12,8 @@ export function ConfidenceBadge({ confidence }: { confidence?: number }) {
 
   return (
     <span className={cn(
-      "inline-flex items-center px-2 py-0.5 rounded text-[10px] font-semibold tracking-wide uppercase",
+      "inline-flex items-center px-2 py-0.5 rounded-full text-[9px] font-bold tracking-wider uppercase border whitespace-nowrap",
+      confidence >= 0.8 ? "border-emerald-200/50" : confidence >= 0.6 ? "border-amber-200/50" : "border-red-200/50",
       colorClass
     )}>
       {Math.round(confidence * 100)}% Conf

@@ -93,8 +93,8 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
   return (
     <div
       className={cn(
-        "w-full max-w-3xl mx-auto mt-8 border rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors group relative overflow-hidden",
-        isCompressed ? "py-4 px-6 border-slate-200 bg-white shadow-sm flex-row justify-between" : "p-12 border-dashed flex-col",
+        "w-full max-w-3xl mx-auto mt-8 border rounded-lg flex items-center justify-center cursor-pointer transition-colors group relative overflow-hidden",
+        isCompressed ? "py-4 px-4 sm:px-6 border-slate-200 bg-white shadow-sm flex-col sm:flex-row gap-4 sm:gap-0 justify-between" : "p-8 sm:p-12 border-dashed flex-col",
         !isCompressed && isDragging ? "border-blue-500 bg-blue-50/50" : !isCompressed ? "border-slate-300 bg-slate-50 hover:border-slate-400 hover:bg-slate-100/50" : ""
       )}
       onDragOver={handleDragOver}
@@ -111,7 +111,7 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
       <input type="file" ref={fileInputRef} onChange={handleChange} className="hidden" multiple accept="image/*" />
       <input type="file" ref={cameraInputRef} onChange={handleChange} className="hidden" accept="image/*" capture="environment" />
 
-      <div className={cn("flex items-center", isCompressed ? "flex-row gap-4" : "flex-col")}>
+      <div className={cn("flex items-center", isCompressed ? "flex-col sm:flex-row gap-1 sm:gap-4 text-center sm:text-left" : "flex-col")}>
         {!isCompressed && (
           <div className={cn(
             "w-12 h-12 mb-4 rounded-md flex items-center justify-center transition-colors",
@@ -130,7 +130,7 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
         </div>
       </div>
 
-      <div className={cn("flex gap-3", isCompressed ? "" : "mt-6")}>
+      <div className={cn("flex gap-3 w-full sm:w-auto justify-center", isCompressed ? "" : "mt-6")}>
         <button
           onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }}
           className="px-4 py-2 bg-slate-900 text-white rounded-md text-sm font-medium hover:bg-slate-800 transition-colors whitespace-nowrap"

@@ -2,7 +2,7 @@
 
 import { IMDBRecord, IMDBFieldKey } from "@/types/imdb"
 import { useItemizeStore } from "@/store/useItemizeStore"
-import { TrashIcon, ArrowPathIcon } from "@heroicons/react/24/outline"
+import { TrashIcon, ArrowPathIcon, ExclamationTriangleIcon } from "@heroicons/react/24/outline"
 import { ConfidenceBadge } from "./ConfidenceBadge"
 import { DuplicateWarning } from "./DuplicateWarning"
 import { extractItemizeData } from "@/lib/extract"
@@ -83,15 +83,17 @@ export function TableRow({ record }: Props) {
   if (record.status === "error") borderLeftClass = "border-l-4 border-red-400"
   else if (record.needsReview) borderLeftClass = "border-l-4 border-yellow-400"
 
-  const renderCell = (field: IMDBFieldKey, placeholder = "—") => {
+  const renderCell = (field: IMDBFieldKey, placeholder = "—", label?: string) => {
     const data = record.fields[field]
+    const isPrimary = field === "itemName" || field === "brand" || field === "manufacturer" || field === "barcode"
+    const mobileSpanClass = isPrimary ? "col-span-2" : "col-span-1"
 
     if (record.status === "processing") {
       return (
         <td className="px-4 py-3 align-top">
-          <div className="flex flex-col gap-2">
-            <div className="animate-pulse bg-slate-200 rounded h-4 w-full" />
-            <div className="animate-pulse bg-slate-200 rounded h-4 w-2/3" />
+          <div className="flex flex-col gap-2.5 mt-1.5">
+            <div className="animate-pulse bg-slate-200/60 rounded h-3.5 w-[85%]" />
+            <div className="animate-pulse bg-slate-200/60 rounded h-3.5 w-1/2" />
           </div>
         </td>
       )
@@ -101,30 +103,49 @@ export function TableRow({ record }: Props) {
 
     return (
       <td
-        className={`px-4 py-3 align-top transition-colors group-hover:bg-slate-50 relative ${data.isEdited ? "bg-blue-50/50" : ""}`}
+        className={`px-3 py-2 sm:px-4 sm:py-3 align-top transition-colors group-hover:bg-slate-50/50 relative ${data.isEdited ? "bg-blue-50/30" : ""} block sm:table-cell ${mobileSpanClass}`}
         onClick={() => { if (!isCurrentlyEditing) startEdit(field, data.value || "") }}
       >
-        <div className="flex flex-col gap-1.5 min-h-[44px]">
+        <div className="flex justify-between items-start mb-1 sm:hidden gap-2">
+          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight pt-0.5">{label}</div>
+          <div className="flex gap-1 pointer-events-none flex-shrink-0">
+            {data.isEdited ? (
+              <span className="inline-flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase text-blue-700 bg-blue-50 border border-blue-200/50 px-1.5 py-0.5 rounded-full whitespace-nowrap">
+                <PencilSquareIcon className="w-2.5 h-2.5" />
+                Edited
+              </span>
+            ) : (
+              <>
+                <SourceBadge source={(data as { source?: string }).source} />
+                <ConfidenceBadge confidence={data.confidence} />
+              </>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-col gap-1 sm:gap-1.5 min-h-[32px] sm:min-h-[44px] group/cell h-full">
           {isCurrentlyEditing ? (
-            <input
-              autoFocus
-              type="text"
-              value={editValue}
-              onChange={(e) => setEditValue(e.target.value)}
-              onKeyDown={handleKeyDown}
-              onBlur={saveEdit}
-              placeholder={placeholder}
-              className="w-full min-w-[120px] px-2 py-1 text-sm bg-white border-b-2 border-blue-500 shadow-sm focus:outline-none"
-            />
+            <div className="relative">
+              <input
+                autoFocus
+                type="text"
+                value={editValue}
+                onChange={(e) => setEditValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                onBlur={saveEdit}
+                placeholder={placeholder}
+                className={`w-full min-w-[120px] px-2.5 py-1.5 text-sm bg-white rounded-md shadow-[0_0_0_2px_rgba(59,130,246,0.5)] focus:outline-none focus:ring-4 focus:ring-blue-500/10 transition-all absolute z-20 top-0 left-0 ${isPrimary ? "font-semibold text-slate-900" : "font-medium text-slate-800"}`}
+              />
+              <div className="opacity-0 px-2.5 py-1.5 text-sm pointer-events-none">{editValue || placeholder}</div>
+            </div>
           ) : (
-            <div className="w-full min-w-[120px] px-2 py-1 text-sm cursor-pointer hover:bg-black/5 rounded transition-colors text-slate-800">
-              {data.value || <span className="text-slate-400 italic">{placeholder}</span>}
+            <div className={`w-full min-w-[120px] px-2.5 py-1.5 text-sm cursor-pointer hover:bg-white hover:shadow-sm rounded-md transition-all border border-transparent hover:border-slate-200 ${isPrimary ? "font-medium text-slate-900" : "text-slate-600"}`}>
+              {data.value || <span className="text-slate-400 font-normal italic">{placeholder}</span>}
             </div>
           )}
-          <div className="flex justify-end gap-1 pr-2 pointer-events-none">
+          <div className="hidden sm:flex justify-end gap-1 pr-2 pointer-events-none mt-auto">
             {data.isEdited ? (
-              <span className="inline-flex items-center gap-1 text-[10px] font-semibold tracking-wide uppercase text-blue-600 bg-blue-100 px-1.5 py-0.5 rounded">
-                <PencilSquareIcon className="w-3 h-3" />
+              <span className="inline-flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase text-blue-700 bg-blue-50 border border-blue-200/50 px-1.5 py-0.5 rounded-full">
+                <PencilSquareIcon className="w-2.5 h-2.5" />
                 Edited
               </span>
             ) : (
@@ -143,90 +164,123 @@ export function TableRow({ record }: Props) {
     <>
       {record.duplicateFlag !== "none" && (
         <tr className="bg-white">
-          <td colSpan={15} className="p-0 border-b border-slate-100">
+          <td colSpan={14} className="p-0 border-b border-slate-100">
             <DuplicateWarning duplicateStatus={record.duplicateFlag} duplicateOf={record.duplicateOf} />
           </td>
         </tr>
       )}
 
-      <tr id={record.id} className="group transition-colors even:bg-slate-50 odd:bg-white relative">
-        <td className={`px-4 py-3 sticky left-0 z-10 bg-inherit border-r border-slate-200 align-top ${borderLeftClass}`}>
-          <div className="flex flex-col items-center gap-2">
-            <div className="relative">
+      <tr id={record.id} className="group transition-all bg-white hover:bg-slate-50/80 relative z-0 hover:z-10 grid grid-cols-2 sm:table-row border border-slate-200 sm:border-none rounded-xl sm:rounded-none overflow-hidden shadow-[0_2px_10px_rgb(0,0,0,0.04)] sm:shadow-none">
+        <td className={`col-span-2 px-4 py-4 sm:py-3 sticky left-0 z-10 bg-slate-50 sm:bg-white/90 backdrop-blur-sm border-b sm:border-b-0 sm:border-r border-slate-100 align-top group-hover:bg-slate-50/90 transition-colors block sm:table-cell ${borderLeftClass}`}>
+          <div className="flex flex-row sm:flex-col items-center gap-4 sm:gap-2 w-full">
+            <div className="relative group/image w-20 h-20 sm:w-16 sm:h-16 rounded-lg overflow-hidden border border-slate-200 shadow-sm bg-slate-100 flex-shrink-0">
               <div
-                className="w-16 h-16 rounded overflow-hidden border border-slate-200 cursor-zoom-in bg-slate-100 flex items-center justify-center"
+                className="absolute inset-0 cursor-zoom-in z-0"
                 onClick={() => window.open(record.media[0]?.url, "_blank")}
-              >
-                {record.media[0]?.type === "video" ? (
-                  <span className="text-xs font-semibold text-slate-500">VID</span>
-                ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img src={record.media[0]?.url} alt={record.media[0]?.name} className="w-full h-full object-cover hover:scale-105 transition-transform" />
-                )}
-              </div>
+              />
+              {record.media[0]?.type === "video" ? (
+                <span className="text-xs font-semibold text-slate-500 absolute inset-0 flex items-center justify-center pointer-events-none">VID</span>
+              ) : (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={record.media[0]?.url} alt={record.media[0]?.name} className="w-full h-full object-cover transition-transform duration-300 group-hover/image:scale-110 pointer-events-none" />
+              )}
               {record.media.length > 1 && (
-                <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm border-2 border-white">
+                <div className="absolute -top-2 -right-2 bg-blue-600 text-white text-[10px] font-bold w-5 h-5 flex items-center justify-center rounded-full shadow-sm border-2 border-white pointer-events-none z-10">
                   +{record.media.length - 1}
                 </div>
               )}
               {record.needsReview && record.status !== "error" && (
-                <span className="absolute -bottom-2 -left-1 text-[9px] font-bold bg-yellow-400 text-yellow-900 px-1 rounded shadow-sm">
+                <span className="absolute -bottom-2 -left-1 text-[9px] font-bold bg-yellow-400 text-yellow-900 px-1 rounded shadow-sm pointer-events-none z-10">
                   ⚠ REVIEW
                 </span>
               )}
+              
+              {/* Desktop: Overlay with buttons on hover */}
+              <div className="hidden sm:flex absolute inset-0 bg-black/40 opacity-0 group-hover/image:opacity-100 transition-all items-center justify-center gap-1.5 backdrop-blur-[1px] z-20">
+                <button
+                  onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }}
+                  className="p-1.5 bg-white/95 text-slate-700 rounded hover:bg-white hover:text-blue-600 transition-colors shadow-sm transform translate-y-1 group-hover/image:translate-y-0"
+                  disabled={record.status === "processing"}
+                  title="Add Media"
+                >
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                  </svg>
+                </button>
+                <button
+                  onClick={(e) => { e.stopPropagation(); removeRecord(record.id) }}
+                  className="p-1.5 bg-white/95 text-slate-700 rounded hover:bg-red-50 hover:text-red-600 transition-colors shadow-sm transform -translate-y-1 group-hover/image:translate-y-0"
+                  title="Delete Record"
+                >
+                  <TrashIcon className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => fileInputRef.current?.click()}
-              className="text-[10px] font-semibold text-slate-500 bg-white border border-slate-200 px-2 py-1 rounded hover:bg-slate-50 transition-colors w-full flex items-center justify-center gap-1 shadow-sm"
-              disabled={record.status === "processing"}
-            >
-              ➕ Media
-            </button>
+            
+            {/* Mobile: Buttons shown beside image */}
+            <div className="flex sm:hidden flex-col justify-center gap-2 w-full">
+              <button
+                onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }}
+                className="w-full py-2 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded shadow-sm flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"
+                disabled={record.status === "processing"}
+                title="Add Media"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Add Media
+              </button>
+              <button
+                onClick={(e) => { e.stopPropagation(); removeRecord(record.id) }}
+                className="w-full py-2 bg-white border border-slate-200 text-slate-500 text-xs font-semibold rounded shadow-sm flex items-center justify-center gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
+                title="Delete Record"
+              >
+                <TrashIcon className="w-4 h-4" />
+                Delete
+              </button>
+            </div>
+
             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddMedia} />
           </div>
         </td>
 
         {record.status === "error" ? (
-          <td colSpan={13} className="px-4 py-3 align-middle bg-red-50/30">
-            <div className="text-red-600 text-sm font-medium">Extraction failed — {record.error}</div>
+          <td colSpan={13} className="px-4 py-3 align-middle bg-red-50/50">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-100 rounded-full flex-shrink-0">
+                <ExclamationTriangleIcon className="w-5 h-5 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold text-red-800">Extraction Failed</h3>
+                <p className="text-xs text-red-600 mt-0.5">{record.error === "Internal server error" ? "The AI extraction service encountered an issue. Please try again." : record.error}</p>
+              </div>
+              <button
+                onClick={handleRetry}
+                className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-white border border-red-200 text-red-700 text-xs font-medium rounded-md hover:bg-red-50 transition-colors shadow-sm"
+              >
+                <ArrowPathIcon className="w-3.5 h-3.5" />
+                Try Again
+              </button>
+            </div>
           </td>
         ) : (
           <>
-            {renderCell("itemName",        "Full catalog name")}
-            {renderCell("barcode",         "e.g. 6033001...")}
-            {renderCell("manufacturer",    "e.g. NESTLE")}
-            {renderCell("brand",           "e.g. MILO")}
-            {renderCell("weight",          "e.g. 400G")}
-            {renderCell("packagingType",   "e.g. TIN")}
-            {renderCell("country",         "e.g. GHANA")}
-            {renderCell("variant",         "e.g. ORIGINAL")}
-            {renderCell("type",            "e.g. POWDER")}
-            {renderCell("fragranceFlavor", "e.g. CHOCOLATE")}
-            {renderCell("promotion",       "e.g. BUY NOW GHS33")}
-            {renderCell("addons",          "e.g. 5 FREE ENVELOPE")}
-            {renderCell("tagline",         "e.g. SUPPORTS ENERGY RELEASE")}
+            {renderCell("itemName",        "Full catalog name", "Item Name")}
+            {renderCell("barcode",         "e.g. 6033001...", "Barcode")}
+            {renderCell("manufacturer",    "e.g. NESTLE", "Manufacturer")}
+            {renderCell("brand",           "e.g. MILO", "Brand")}
+            {renderCell("weight",          "e.g. 400G", "Weight")}
+            {renderCell("packagingType",   "e.g. TIN", "Packaging")}
+            {renderCell("country",         "e.g. GHANA", "Country")}
+            {renderCell("variant",         "e.g. ORIGINAL", "Variant")}
+            {renderCell("type",            "e.g. POWDER", "Type")}
+            {renderCell("fragranceFlavor", "e.g. CHOCOLATE", "Fragrance/Flavor")}
+            {renderCell("promotion",       "e.g. BUY NOW GHS33", "Promotion")}
+            {renderCell("addons",          "e.g. 5 FREE ENVELOPE", "Addons")}
+            {renderCell("tagline",         "e.g. SUPPORTS ENERGY RELEASE", "Tagline")}
           </>
         )}
 
-        <td className="px-4 py-3 text-right align-top border-l border-slate-100 bg-inherit">
-          <div className="flex flex-col items-end gap-2 h-full">
-            {record.status === "error" ? (
-              <button onClick={handleRetry} className="flex items-center gap-1 px-2 py-1 bg-white border border-slate-300 text-slate-700 text-xs rounded hover:bg-slate-50 transition-colors">
-                <ArrowPathIcon className="w-3 h-3" />
-                Retry
-              </button>
-            ) : record.status === "processing" ? (
-              <span className="text-xs font-medium text-slate-500 italic">Processing...</span>
-            ) : null}
-            <button
-              onClick={() => removeRecord(record.id)}
-              className="p-1.5 text-slate-400 hover:text-red-600 rounded transition-colors opacity-0 group-hover:opacity-100 focus:opacity-100 mt-auto"
-              title="Delete Record"
-            >
-              <TrashIcon className="w-4 h-4" />
-            </button>
-          </div>
-        </td>
       </tr>
     </>
   )
