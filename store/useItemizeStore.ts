@@ -73,7 +73,7 @@ export const useItemizeStore = create<ItemizeState>((set, get) => ({
           ...r,
           fields: {
             ...r.fields,
-            [field]: { ...r.fields[field], value, isEdited: true, isValid: true }
+            [field]: { ...r.fields[field], value, isEdited: true, isValid: true, confidence: 1.0 }
           }
         }
       })
@@ -112,12 +112,15 @@ export const useItemizeStore = create<ItemizeState>((set, get) => ({
             records[j] = { ...records[j], duplicateFlag: "exact" as const, duplicateOf: r1.id }
             continue
           }
-          const b1 = r1.fields.brand.value?.toLowerCase()
-          const b2 = r2.fields.brand.value?.toLowerCase()
-          const w1 = r1.fields.weight.value?.toLowerCase()
-          const w2 = r2.fields.weight.value?.toLowerCase()
-          if (b1 && b2 && w1 && w2 && b1 === b2 && w1 === w2) {
-            records[j] = { ...records[j], duplicateFlag: "possible" as const, duplicateOf: r1.id }
+          // Only apply "possible" if not already marked as "exact"
+          if (records[j].duplicateFlag !== "exact") {
+            const b1 = r1.fields.brand.value?.toLowerCase()
+            const b2 = r2.fields.brand.value?.toLowerCase()
+            const w1 = r1.fields.weight.value?.toLowerCase()
+            const w2 = r2.fields.weight.value?.toLowerCase()
+            if (b1 && b2 && w1 && w2 && b1 === b2 && w1 === w2) {
+              records[j] = { ...records[j], duplicateFlag: "possible" as const, duplicateOf: r1.id }
+            }
           }
         }
       }

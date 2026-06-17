@@ -7,6 +7,14 @@ export function normalizeWeight(raw: string | null): string | null {
 
   let str = raw.toLowerCase().replace(/\s+/g, "")
 
+  // Normalize spelled-out units to abbreviated forms
+  str = str.replace(/\bmilliliters?\b/g, "ml")
+  str = str.replace(/\bmillilitres?\b/g, "ml")
+  str = str.replace(/\bliters?\b/g, "l")
+  str = str.replace(/\blitres?\b/g, "l")
+  str = str.replace(/\bkilograms?\b/g, "kg")
+  str = str.replace(/\bgrams?\b/g, "g")
+
   // Handle multipack: "2x250g" → "500g"
   const dualMatch = str.match(/(\d+(?:\.\d+)?)\s*x\s*(\d+(?:\.\d+)?)/)
   if (dualMatch) {
@@ -53,18 +61,20 @@ export function normalizePackaging(raw: string | null): string | null {
   ]
   if (exact.includes(str)) return str
 
-  // Fuzzy matching
+  // Fuzzy matching - check more specific patterns first
   if (str.includes("TETRA") || str.includes("TETRAPAK")) return "TETRA PAK"
-  if (str.includes("GLASS")) return "GLASS JAR"
   if (str.includes("PLASTIC BOTTLE") || (str.includes("PLASTIC") && str.includes("BOTTLE"))) return "PLASTIC BOTTLE"
   if (str.includes("PLASTIC BAG") || (str.includes("PLASTIC") && str.includes("BAG"))) return "PLASTIC BAG"
+  if (str.includes("GLASS") && str.includes("BOTTLE")) return "BOTTLE"
+  if (str.includes("GLASS")) return "GLASS JAR"
   if (str.includes("TUB")) return "TUB"
   if (str.includes("SACHET") || str.includes("PACKET")) return "SACHET"
   if (str.includes("POUCH")) return "POUCH"
   if (str.includes("BOTTLE")) return "BOTTLE"
   if (str.includes("CAN") || str.includes("BEVERAGE CAN")) return "CAN"
   if (str.includes("TIN")) return "TIN"
-  if (str.includes("BOX") || str.includes("CARTON") || str.includes("CARDBOARD")) return "BOX"
+  if (str.includes("CARTON")) return "CARTON"
+  if (str.includes("BOX") || str.includes("CARDBOARD")) return "BOX"
   if (str.includes("WRAP")) return "WRAPPED"
   if (str.includes("JAR")) return "JAR"
   if (str.includes("BAG")) return "PLASTIC BAG"
