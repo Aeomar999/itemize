@@ -78,10 +78,7 @@ Itemize is built as a Progressive Web App (PWA), meaning you can install it dire
 ![Desktop Capture 4](https://drive.google.com/file/d/1ELrjQTHU86J3k1VMV9701Ewk2_gjJdR8/view?usp=drive_link)
 
 **Desktop Walkthrough Video:**
-<video width="100%" controls>
-  <source src="../Screeshots/Desktop%20view/Recording%202026-06-17%20122730.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+[Watch the Desktop Walkthrough on Google Drive](https://drive.google.com/file/d/YOUR_VIDEO_ID_HERE/view?usp=sharing)
 
 ### Mobile View (PWA)
 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
@@ -91,10 +88,7 @@ Itemize is built as a Progressive Web App (PWA), meaning you can install it dire
 </div>
 
 **Mobile Walkthrough Video:**
-<video width="100%" controls>
-  <source src="../Screeshots/Mobile%20view/WhatsApp%20Video%202026-06-17%20at%2012.29.21%20PM.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+[Watch the Mobile Walkthrough on Google Drive](https://drive.google.com/file/d/YOUR_VIDEO_ID_HERE/view?usp=sharing)
 
 ---
 
