@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useRef, useState } from "react"
+import { useRef, useState } from "react"
 import { PhotoIcon, CameraIcon, CloudArrowUpIcon } from "@heroicons/react/24/outline"
 import { useItemizeStore } from "@/store/useItemizeStore"
 import { cn } from "@/lib/utils"
@@ -75,12 +75,12 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
     }
   }
 
-  const handleDragOver = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(true) }, [])
-  const handleDragLeave = useCallback((e: React.DragEvent) => { e.preventDefault(); setIsDragging(false) }, [])
-  const handleDrop = useCallback((e: React.DragEvent) => {
+  const handleDragOver = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(true) }
+  const handleDragLeave = (e: React.DragEvent) => { e.preventDefault(); setIsDragging(false) }
+  const handleDrop = (e: React.DragEvent) => {
     e.preventDefault(); setIsDragging(false)
     if (e.dataTransfer.files?.length) processFiles(e.dataTransfer.files)
-  }, [])
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files?.length) {

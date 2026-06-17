@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI, Schema, SchemaType } from "@google/generative-ai"
 import { ItemizeExtractionSchema } from "@/lib/schema"
 import { SYSTEM_INSTRUCTION, RETRY_SYSTEM_INSTRUCTION, buildPromptWithBarcode, FIELD_RETRY_PROMPTS } from "@/lib/prompt"
-import { ValidatedFields, RawExtractedFields, GeminiFieldResult } from "@/types/imdb"
+import { ValidatedFields, RawExtractedFields, GeminiFieldResult, ValidatedFieldResult } from "@/types/imdb"
 import { normalizeWeight, normalizePackaging, normalizeCountry } from "@/lib/normalize"
 import { validateBarcode } from "@/lib/validate"
 import { groqExtractFull, groqRetryField } from "@/lib/groq"
@@ -200,6 +200,8 @@ export async function twoPassExtract(
   }
 
   // --- Pass 2: Targeted retries for low-confidence fields ---
+  const fieldSources: Record<string, "gemini" | "groq"> = {}
+
   if (!usedGroqPrimary) {
     const retryTargets = RETRY_FIELDS.filter(field => {
       if (field === "barcode" && barcodeOverride) return false
@@ -235,7 +237,6 @@ export async function twoPassExtract(
     )
 
     // Merge improved results back into rawJson, tracking source
-    const fieldSources: Record<string, "gemini" | "groq"> = {}
     for (const item of retryResults) {
       if (!item) continue
       rawJson[item.field] = item.result
@@ -257,7 +258,7 @@ export async function twoPassExtract(
     // Apply source information from retry results
     for (const [field, source] of Object.entries(fieldSources)) {
       if (field in validated) {
-        (validated as Record<string, ValidatedFieldResult>)[field].source = source
+        (validated as unknown as Record<string, ValidatedFieldResult>)[field].source = source
       }
     }
   }
