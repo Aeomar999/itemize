@@ -71,11 +71,11 @@ Itemize is built as a Progressive Web App (PWA), meaning you can install it dire
 ## 📸 Media Gallery
 
 ### Desktop View
-![Desktop Dashboard](../Screeshots/Desktop%20view/Fatala_DT.png)
-![Desktop Capture 1](../Screeshots/Desktop%20view/screenshotter-20260617-114751.png)
-![Desktop Capture 2](../Screeshots/Desktop%20view/screenshotter-20260617-115221.png)
-![Desktop Capture 3](../Screeshots/Desktop%20view/screenshotter-20260617-115331.png)
-![Desktop Capture 4](../Screeshots/Desktop%20view/screenshotter-20260617-115407.png)
+![Desktop Dashboard](https://drive.google.com/file/d/19iQQ98UY9c4sjR9_juj8J4iej6nXBz4P/view?usp=drive_link)
+![Desktop Capture 1](https://drive.google.com/file/d/1lQznQJwf0BN7jjKQyOq8lWF3v1pj_Vg3/view?usp=drive_link)
+![Desktop Capture 2](https://drive.google.com/file/d/1KOi-wDF4EFLP9qjO3tyc79vf_64MkCPQ/view?usp=drive_link)
+![Desktop Capture 3](https://drive.google.com/file/d/1ScI1u0dHhlrSodoVvPdhEu9jJlfoeQ5w/view?usp=drive_link)
+![Desktop Capture 4](https://drive.google.com/file/d/1ELrjQTHU86J3k1VMV9701Ewk2_gjJdR8/view?usp=drive_link)
 
 **Desktop Walkthrough Video:**
 <video width="100%" controls>
@@ -85,9 +85,9 @@ Itemize is built as a Progressive Web App (PWA), meaning you can install it dire
 
 ### Mobile View (PWA)
 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-  <img src="../Screeshots/Mobile%20view/WhatsApp%20Image%202026-06-17%20at%2012.28.25%20PM.jpeg" width="30%" alt="Mobile Capture 1">
-  <img src="../Screeshots/Mobile%20view/WhatsApp%20Image%202026-06-17%20at%2012.28.25%20PM%20(1).jpeg" width="30%" alt="Mobile Capture 2">
-  <img src="../Screeshots/Mobile%20view/WhatsApp%20Image%202026-06-17%20at%2012.28.25%20PM%20(2).jpeg" width="30%" alt="Mobile Capture 3">
+  <img src="https://drive.google.com/file/d/1pKFECT2WWoEp-V7OEABADvehTcGgnPTw/view?usp=drive_link" width="30%" alt="Mobile Capture 1">
+  <img src="https://drive.google.com/file/d/1FW7UzsJCrx-GRWaB96dLoIB8ly6q_ZyY/view?usp=drive_link" width="30%" alt="Mobile Capture 2">
+  <img src="https://drive.google.com/file/d/1V8xZm2aDuJP4BWkp5ccUIoT383-zGCX_/view?usp=drive_link" width="30%" alt="Mobile Capture 3">
 </div>
 
 **Mobile Walkthrough Video:**
