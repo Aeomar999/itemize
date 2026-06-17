@@ -1,8 +1,11 @@
 import { create } from 'zustand'
 import { IMDBRecord, IMDBFieldKey, FieldValue, MediaItem } from '@/types/imdb'
+import { supabase } from '@/lib/supabase'
 
 interface ItemizeState {
   records: IMDBRecord[]
+  isHydrated: boolean
+  fetchRecords: () => Promise<void>
   addRecord: (mediaItems: MediaItem[]) => string
   updateRecord: (id: string, updates: Partial<IMDBRecord>) => void
   updateField: (id: string, field: IMDBFieldKey, value: string) => void
@@ -33,41 +36,73 @@ const createEmptyFields = () => ({
 
 export const useItemizeStore = create<ItemizeState>((set, get) => ({
   records: [],
+  isHydrated: false,
+
+  fetchRecords: async () => {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .order('created_at', { ascending: false })
+      
+    if (!error && data) {
+      set({ records: data as IMDBRecord[], isHydrated: true })
+      get().recalculateDuplicates()
+    } else {
+      set({ isHydrated: true })
+      console.error("Failed to fetch records:", error)
+    }
+  },
 
   addRecord: (mediaItems) => {
     const id = crypto.randomUUID()
-    set((state) => ({
-      records: [...state.records, {
-        id,
-        media: mediaItems,
-        status: "queued",
-        fields: createEmptyFields(),
-        needsReview: false,
-        duplicateFlag: "none",
-        duplicateOf: null,
-        error: null,
-      }]
-    }))
+    const newRecord: IMDBRecord = {
+      id,
+      media: mediaItems,
+      status: "queued",
+      fields: createEmptyFields(),
+      needsReview: false,
+      duplicateFlag: "none",
+      duplicateOf: null,
+      error: null,
+    }
+    
+    // Update local state instantly
+    set((state) => ({ records: [newRecord, ...state.records] }))
+    
+    // Sync to Supabase
+    supabase.from('products').insert([newRecord]).then(({ error }) => {
+      if (error) console.error("Error inserting record:", error)
+    })
+    
     return id
   },
 
   addMediaToRecord: (id, mediaItem) => {
-    set((state) => ({
-      records: state.records.map((r) =>
-        r.id === id ? { ...r, media: [...r.media, mediaItem], status: "queued" } : r
+    set((state) => {
+      const records = state.records.map((r) =>
+        r.id === id ? { ...r, media: [...r.media, mediaItem], status: "queued" as const } : r
       )
-    }))
+      
+      const updatedRecord = records.find(r => r.id === id)
+      if (updatedRecord) {
+        supabase.from('products').update({ media: updatedRecord.media, status: "queued" }).eq('id', id).then()
+      }
+      
+      return { records }
+    })
   },
 
   updateRecord: (id, updates) => {
-    set((state) => ({
-      records: state.records.map((r) => r.id === id ? { ...r, ...updates } : r)
-    }))
+    set((state) => {
+      const records = state.records.map((r) => r.id === id ? { ...r, ...updates } : r)
+      supabase.from('products').update(updates).eq('id', id).then()
+      return { records }
+    })
   },
 
   updateField: (id, field, value) => {
-    set((state) => ({
-      records: state.records.map((r) => {
+    set((state) => {
+      const records = state.records.map((r) => {
         if (r.id !== id) return r
         return {
           ...r,
@@ -77,27 +112,45 @@ export const useItemizeStore = create<ItemizeState>((set, get) => ({
           }
         }
       })
-    }))
+      
+      const updatedRecord = records.find(r => r.id === id)
+      if (updatedRecord) {
+        supabase.from('products').update({ fields: updatedRecord.fields }).eq('id', id).then()
+      }
+      
+      return { records }
+    })
     get().recalculateNeedsReview(id)
     get().recalculateDuplicates()
   },
 
   removeRecord: (id) => {
     set((state) => ({ records: state.records.filter((r) => r.id !== id) }))
+    supabase.from('products').delete().eq('id', id).then()
     get().recalculateDuplicates()
   },
 
-  clearSession: () => set({ records: [] }),
+  clearSession: () => {
+    set({ records: [] })
+    // We do NOT clear Supabase on clearSession to preserve data!
+  },
 
   recalculateNeedsReview: (id) => {
-    set((state) => ({
-      records: state.records.map(r => {
+    set((state) => {
+      const records = state.records.map(r => {
         if (r.id !== id) return r
         const needsReview = r.status === "error" ||
           Object.values(r.fields).some(f => f.confidence < 0.60 || f.isValid === false)
         return { ...r, needsReview }
       })
-    }))
+      
+      const updatedRecord = records.find(r => r.id === id)
+      if (updatedRecord) {
+        supabase.from('products').update({ needsReview: updatedRecord.needsReview }).eq('id', id).then()
+      }
+      
+      return { records }
+    })
   },
 
   recalculateDuplicates: () => {
@@ -112,7 +165,6 @@ export const useItemizeStore = create<ItemizeState>((set, get) => ({
             records[j] = { ...records[j], duplicateFlag: "exact" as const, duplicateOf: r1.id }
             continue
           }
-          // Only apply "possible" if not already marked as "exact"
           if (records[j].duplicateFlag !== "exact") {
             const b1 = r1.fields.brand.value?.toLowerCase()
             const b2 = r2.fields.brand.value?.toLowerCase()
@@ -124,6 +176,15 @@ export const useItemizeStore = create<ItemizeState>((set, get) => ({
           }
         }
       }
+      
+      // Batch update duplicates
+      records.forEach(r => {
+        const original = state.records.find(orig => orig.id === r.id)
+        if (original && (original.duplicateFlag !== r.duplicateFlag || original.duplicateOf !== r.duplicateOf)) {
+          supabase.from('products').update({ duplicateFlag: r.duplicateFlag, duplicateOf: r.duplicateOf }).eq('id', r.id).then()
+        }
+      })
+      
       return { records }
     })
   },

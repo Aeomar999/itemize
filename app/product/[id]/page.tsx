@@ -58,16 +58,29 @@ export default function ProductDetailsPage() {
     if (e.target.files && e.target.files.length > 0) {
       const file = e.target.files[0]
       const isVideo = file.type.startsWith("video/")
-      const newMedia = { url: URL.createObjectURL(file), name: file.name, type: isVideo ? "video" as const : "image" as const }
       
-      addMediaToRecord(record.id, newMedia)
-      const allMedia = [...record.media, newMedia]
-      setActiveMediaIndex(allMedia.length - 1) // Switch to the newly uploaded media
-      
-      updateRecord(record.id, { status: "processing" })
       try {
+        // Upload to Supabase Storage
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`
+        const filePath = `${fileName}`
+        
+        const { supabase } = await import("@/lib/supabase")
+        const { error: uploadError } = await supabase.storage.from('media').upload(filePath, file)
+        if (uploadError) throw uploadError
+
+        const { data: publicUrlData } = supabase.storage.from('media').getPublicUrl(filePath)
+
+        const newMedia = { url: publicUrlData.publicUrl, name: file.name, type: isVideo ? "video" as const : "image" as const }
+        
+        addMediaToRecord(record.id, newMedia)
+        const allMedia = [...record.media, newMedia]
+        setActiveMediaIndex(allMedia.length - 1) // Switch to the newly uploaded media
+        
+        updateRecord(record.id, { status: "processing" })
         const result = await extractItemizeData(record.id, allMedia)
         updateRecord(record.id, result)
+        
       } catch (err: unknown) {
         updateRecord(record.id, { status: "error", error: err instanceof Error ? err.message : "Failed" })
       }

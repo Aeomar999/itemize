@@ -48,11 +48,22 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
     setUploadedCount(prev => prev + fileArray.length)
 
     for (const file of fileArray) {
-      const mediaItem = { url: URL.createObjectURL(file), name: file.name, type: "image" }
-      const id = addRecord([mediaItem])
-      updateRecord(id, { status: "processing" })
-
+      let currentId = ""
       try {
+        // Upload to Supabase Storage
+        const fileExt = file.name.split('.').pop()
+        const fileName = `${Math.random().toString(36).substring(2, 15)}_${Date.now()}.${fileExt}`
+        const filePath = `${fileName}`
+        
+        const { error: uploadError } = await import("@/lib/supabase").then(m => m.supabase.storage.from('media').upload(filePath, file))
+        if (uploadError) throw uploadError
+
+        const { data: publicUrlData } = await import("@/lib/supabase").then(m => m.supabase.storage.from('media').getPublicUrl(filePath))
+        
+        const mediaItem = { url: publicUrlData.publicUrl, name: file.name, type: "image" }
+        currentId = addRecord([mediaItem])
+        updateRecord(currentId, { status: "processing" })
+
         const formData = new FormData()
         formData.append("media", file)
 
@@ -64,14 +75,17 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
         }
 
         const { fields } = (await response.json()) as { fields: ValidatedFields }
-        updateRecord(id, { status: "done", fields: mapApiFieldsToRecord(fields) })
+        updateRecord(currentId, { status: "done", fields: mapApiFieldsToRecord(fields) })
       } catch (error) {
         const message = error instanceof Error ? error.message : "Extraction failed"
-        updateRecord(id, { status: "error", error: message })
+        if (currentId) updateRecord(currentId, { status: "error", error: message })
+        else console.error("Upload failed before record creation:", message)
       }
 
-      recalculateNeedsReview(id)
-      recalculateDuplicates()
+      if (currentId) {
+        recalculateNeedsReview(currentId)
+        recalculateDuplicates()
+      }
     }
   }
 
