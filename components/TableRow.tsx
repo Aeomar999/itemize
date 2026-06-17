@@ -83,10 +83,9 @@ export function TableRow({ record }: Props) {
   if (record.status === "error") borderLeftClass = "border-l-4 border-red-400"
   else if (record.needsReview) borderLeftClass = "border-l-4 border-yellow-400"
 
-  const renderCell = (field: IMDBFieldKey, placeholder = "—", label?: string) => {
+  const renderCell = (field: IMDBFieldKey, placeholder = "—") => {
     const data = record.fields[field]
-    const isPrimary = field === "itemName" || field === "brand" || field === "manufacturer" || field === "barcode"
-    const mobileSpanClass = isPrimary ? "col-span-2" : "col-span-1"
+    const isPrimary = field === "itemName" || field === "brand"
 
     if (record.status === "processing") {
       return (
@@ -103,26 +102,10 @@ export function TableRow({ record }: Props) {
 
     return (
       <td
-        className={`px-3 py-2 sm:px-4 sm:py-3 align-top transition-colors group-hover:bg-slate-50/50 relative ${data.isEdited ? "bg-blue-50/30" : ""} block sm:table-cell ${mobileSpanClass}`}
+        className={`px-4 py-3 align-top transition-colors group-hover:bg-slate-50/50 relative ${data.isEdited ? "bg-blue-50/30" : ""}`}
         onClick={() => { if (!isCurrentlyEditing) startEdit(field, data.value || "") }}
       >
-        <div className="flex justify-between items-start mb-1 sm:hidden gap-2">
-          <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider leading-tight pt-0.5">{label}</div>
-          <div className="flex gap-1 pointer-events-none flex-shrink-0">
-            {data.isEdited ? (
-              <span className="inline-flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase text-blue-700 bg-blue-50 border border-blue-200/50 px-1.5 py-0.5 rounded-full whitespace-nowrap">
-                <PencilSquareIcon className="w-2.5 h-2.5" />
-                Edited
-              </span>
-            ) : (
-              <>
-                <SourceBadge source={(data as { source?: string }).source} />
-                <ConfidenceBadge confidence={data.confidence} />
-              </>
-            )}
-          </div>
-        </div>
-        <div className="flex flex-col gap-1 sm:gap-1.5 min-h-[32px] sm:min-h-[44px] group/cell h-full">
+        <div className="flex flex-col gap-1.5 min-h-[44px] group/cell h-full">
           {isCurrentlyEditing ? (
             <div className="relative">
               <input
@@ -142,7 +125,7 @@ export function TableRow({ record }: Props) {
               {data.value || <span className="text-slate-400 font-normal italic">{placeholder}</span>}
             </div>
           )}
-          <div className="hidden sm:flex justify-end gap-1 pr-2 pointer-events-none mt-auto">
+          <div className="flex justify-end gap-1 pr-2 pointer-events-none mt-auto opacity-0 group-hover/cell:opacity-100 transition-opacity">
             {data.isEdited ? (
               <span className="inline-flex items-center gap-1 text-[9px] font-bold tracking-wider uppercase text-blue-700 bg-blue-50 border border-blue-200/50 px-1.5 py-0.5 rounded-full">
                 <PencilSquareIcon className="w-2.5 h-2.5" />
@@ -170,10 +153,10 @@ export function TableRow({ record }: Props) {
         </tr>
       )}
 
-      <tr id={record.id} className="group transition-all bg-white hover:bg-slate-50/80 relative z-0 hover:z-10 grid grid-cols-2 sm:table-row border border-slate-200 sm:border-none rounded-xl sm:rounded-none overflow-hidden shadow-[0_2px_10px_rgb(0,0,0,0.04)] sm:shadow-none">
-        <td className={`col-span-2 px-4 py-4 sm:py-3 sticky left-0 z-10 bg-slate-50 sm:bg-white/90 backdrop-blur-sm border-b sm:border-b-0 sm:border-r border-slate-100 align-top group-hover:bg-slate-50/90 transition-colors block sm:table-cell ${borderLeftClass}`}>
-          <div className="flex flex-row sm:flex-col items-center gap-4 sm:gap-2 w-full">
-            <div className="relative group/image w-20 h-20 sm:w-16 sm:h-16 rounded-lg overflow-hidden border border-slate-200 shadow-sm bg-slate-100 flex-shrink-0">
+      <tr id={record.id} className="group transition-all bg-white hover:bg-slate-50/80 relative z-0 hover:z-10">
+        <td className={`px-4 py-3 sticky left-0 z-10 bg-white/90 backdrop-blur-sm border-r border-slate-100 align-top group-hover:bg-slate-50/90 transition-colors ${borderLeftClass}`}>
+          <div className="flex flex-col items-center gap-2 w-full">
+            <div className="relative group/image w-16 h-16 rounded-lg overflow-hidden border border-slate-200 shadow-sm bg-slate-100 flex-shrink-0">
               <div
                 className="absolute inset-0 cursor-zoom-in z-0"
                 onClick={() => window.open(record.media[0]?.url, "_blank")}
@@ -216,29 +199,6 @@ export function TableRow({ record }: Props) {
                 </button>
               </div>
             </div>
-            
-            {/* Mobile: Buttons shown beside image */}
-            <div className="flex sm:hidden flex-col justify-center gap-2 w-full">
-              <button
-                onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }}
-                className="w-full py-2 bg-white border border-slate-200 text-slate-700 text-xs font-semibold rounded shadow-sm flex items-center justify-center gap-2 hover:bg-slate-50 transition-colors"
-                disabled={record.status === "processing"}
-                title="Add Media"
-              >
-                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                </svg>
-                Add Media
-              </button>
-              <button
-                onClick={(e) => { e.stopPropagation(); removeRecord(record.id) }}
-                className="w-full py-2 bg-white border border-slate-200 text-slate-500 text-xs font-semibold rounded shadow-sm flex items-center justify-center gap-2 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-colors"
-                title="Delete Record"
-              >
-                <TrashIcon className="w-4 h-4" />
-                Delete
-              </button>
-            </div>
 
             <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddMedia} />
           </div>
@@ -265,19 +225,19 @@ export function TableRow({ record }: Props) {
           </td>
         ) : (
           <>
-            {renderCell("itemName",        "Full catalog name", "Item Name")}
-            {renderCell("barcode",         "e.g. 6033001...", "Barcode")}
-            {renderCell("manufacturer",    "e.g. NESTLE", "Manufacturer")}
-            {renderCell("brand",           "e.g. MILO", "Brand")}
-            {renderCell("weight",          "e.g. 400G", "Weight")}
-            {renderCell("packagingType",   "e.g. TIN", "Packaging")}
-            {renderCell("country",         "e.g. GHANA", "Country")}
-            {renderCell("variant",         "e.g. ORIGINAL", "Variant")}
-            {renderCell("type",            "e.g. POWDER", "Type")}
-            {renderCell("fragranceFlavor", "e.g. CHOCOLATE", "Fragrance/Flavor")}
-            {renderCell("promotion",       "e.g. BUY NOW GHS33", "Promotion")}
-            {renderCell("addons",          "e.g. 5 FREE ENVELOPE", "Addons")}
-            {renderCell("tagline",         "e.g. SUPPORTS ENERGY RELEASE", "Tagline")}
+            {renderCell("itemName",        "Full catalog name")}
+            {renderCell("barcode",         "e.g. 6033001...")}
+            {renderCell("manufacturer",    "e.g. NESTLE")}
+            {renderCell("brand",           "e.g. MILO")}
+            {renderCell("weight",          "e.g. 400G")}
+            {renderCell("packagingType",   "e.g. TIN")}
+            {renderCell("country",         "e.g. GHANA")}
+            {renderCell("variant",         "e.g. ORIGINAL")}
+            {renderCell("type",            "e.g. POWDER")}
+            {renderCell("fragranceFlavor", "e.g. CHOCOLATE")}
+            {renderCell("promotion",       "e.g. BUY NOW GHS33")}
+            {renderCell("addons",          "e.g. 5 FREE ENVELOPE")}
+            {renderCell("tagline",         "e.g. SUPPORTS ENERGY RELEASE")}
           </>
         )}
 
