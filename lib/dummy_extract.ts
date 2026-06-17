@@ -23,13 +23,13 @@ export async function dummyExtract(id: string, file: File): Promise<Partial<IMDB
         brand: createDummyField("Coca-Cola", 0.98),
         weight: createDummyField("330 mL", 0.95),
         packagingType: createDummyField("Can", 0.99),
-        country: createDummyField("United States", 0.45), // Low confidence to trigger review
-        variant: createDummyField(null, 0.90),
-        type: createDummyField("Beverages", 0.95),
+        country: createDummyField("United States", 0.45),
+        variant: createDummyField("Original Taste", 0.95),
+        type: createDummyField("Carbonated Drink", 0.95),
         fragranceFlavor: createDummyField(null, 0.90),
         promotion: createDummyField("Share a Coke", 0.70),
         addons: createDummyField(null, 0.90),
-        tagline: createDummyField(null, 0.90)
+        tagline: createDummyField("Taste the Feeling", 0.85)
       }
     }
   }
@@ -44,12 +44,12 @@ export async function dummyExtract(id: string, file: File): Promise<Partial<IMDB
       weight: createDummyField("150 g", 0.95),
       packagingType: createDummyField("Bag", 0.99),
       country: createDummyField("United Kingdom", 0.95),
-      variant: createDummyField(null, 0.90),
-      type: createDummyField("Snacks", 0.85),
+      variant: createDummyField("Classic", 0.90),
+      type: createDummyField("Potato Chips", 0.95),
       fragranceFlavor: createDummyField(null, 0.90),
       promotion: createDummyField(null, 0.90),
       addons: createDummyField(null, 0.90),
-      tagline: createDummyField(null, 0.90)
+      tagline: createDummyField("Betcha Can't Eat Just One", 0.90)
     }
   }
 }
