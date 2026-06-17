@@ -71,25 +71,14 @@ Itemize is built as a Progressive Web App (PWA), meaning you can install it dire
 ## 📸 Media Gallery
 
 ### Desktop View
-<<<<<<< HEAD
-![Desktop Dashboard]()
-![Desktop Capture 1]()
-![Desktop Capture 2]()
-![Desktop Capture 3]()
-![Desktop Capture 4]()
-=======
 ![Desktop Dashboard](https://drive.google.com/file/d/19iQQ98UY9c4sjR9_juj8J4iej6nXBz4P/view?usp=drive_link)
 ![Desktop Capture 1](https://drive.google.com/file/d/1lQznQJwf0BN7jjKQyOq8lWF3v1pj_Vg3/view?usp=drive_link)
 ![Desktop Capture 2](https://drive.google.com/file/d/1KOi-wDF4EFLP9qjO3tyc79vf_64MkCPQ/view?usp=drive_link)
 ![Desktop Capture 3](https://drive.google.com/file/d/1ScI1u0dHhlrSodoVvPdhEu9jJlfoeQ5w/view?usp=drive_link)
 ![Desktop Capture 4](https://drive.google.com/file/d/1ELrjQTHU86J3k1VMV9701Ewk2_gjJdR8/view?usp=drive_link)
->>>>>>> c65ab153102a4ef46fa6a99049486e7ba8e83d2e
 
 **Desktop Walkthrough Video:**
-<video width="100%" controls>
-  <source src="../Screeshots/Desktop%20view/Recording%202026-06-17%20122730.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+[Watch the Desktop Walkthrough on Google Drive](https://drive.google.com/file/d/YOUR_VIDEO_ID_HERE/view?usp=sharing)
 
 ### Mobile View (PWA)
 <div style="display: flex; flex-wrap: wrap; gap: 10px;">
@@ -99,10 +88,7 @@ Itemize is built as a Progressive Web App (PWA), meaning you can install it dire
 </div>
 
 **Mobile Walkthrough Video:**
-<video width="100%" controls>
-  <source src="../Screeshots/Mobile%20view/WhatsApp%20Video%202026-06-17%20at%2012.29.21%20PM.mp4" type="video/mp4">
-  Your browser does not support the video tag.
-</video>
+[Watch the Mobile Walkthrough on Google Drive](https://drive.google.com/file/d/YOUR_VIDEO_ID_HERE/view?usp=sharing)
 
 ---
 
