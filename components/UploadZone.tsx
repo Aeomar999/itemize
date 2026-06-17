@@ -11,7 +11,7 @@ interface UploadZoneProps {
 }
 
 function mapApiFieldsToRecord(fields: ValidatedFields): ReturnType<typeof useItemizeStore.getState>["records"][0]["fields"] {
-  const mapped = {} as Record<string, { value: string | null; confidence: number; isEdited: boolean; isValid: boolean }>
+  const mapped = {} as Record<string, { value: string | null; confidence: number; isEdited: boolean; isValid: boolean; source?: string }>
   for (const key of Object.keys(fields) as IMDBFieldKey[]) {
     const f = fields[key]
     mapped[key] = {
@@ -19,6 +19,7 @@ function mapApiFieldsToRecord(fields: ValidatedFields): ReturnType<typeof useIte
       confidence: f.confidence,
       isEdited: false,
       isValid: f.isValid,
+      source: f.source,
     }
   }
   return mapped as ReturnType<typeof useItemizeStore.getState>["records"][0]["fields"]
@@ -33,15 +34,18 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
   const recalculateDuplicates = useItemizeStore(state => state.recalculateDuplicates)
 
   const [isDragging, setIsDragging] = useState(false)
+  const [uploadedCount, setUploadedCount] = useState(0)
 
   const processFiles = async (files: FileList | File[]) => {
     const fileArray = Array.from(files).filter(f => f.type.startsWith("image/"))
 
     if (fileArray.length === 0) return
-    if (fileArray.length > 20) {
+    if (uploadedCount + fileArray.length > 20) {
       alert("Too many images — maximum 20 per session")
       return
     }
+
+    setUploadedCount(prev => prev + fileArray.length)
 
     for (const file of fileArray) {
       const mediaItem = { url: URL.createObjectURL(file), name: file.name, type: "image" }

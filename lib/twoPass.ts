@@ -91,7 +91,7 @@ function applyNormalization(raw: RawExtractedFields, barcodeOverride?: string | 
       source: "gemini",
     },
     barcode: {
-      value: barcodeOverride || raw.barcode?.value || null,
+      value: (barcodeOverride || raw.barcode?.value || null)?.replace(/\D/g, "") || null,
       confidence: barcodeOverride ? 1.0 : (raw.barcode?.confidence ?? 0),
       isValid: validateBarcode(barcodeOverride || raw.barcode?.value || null),
       source: barcodeOverride ? "override" : "gemini",
@@ -219,22 +219,27 @@ export async function twoPassExtract(
 
         // Try Groq retry if Gemini retry didn't improve
         const groqRetry = await groqRetryField(field, fieldPrompt, files)
-        const bestRetry = [geminiRetry, groqRetry]
-          .filter(Boolean)
-          .sort((a, b) => (b!.confidence ?? 0) - (a!.confidence ?? 0))[0]
+        const bestRetry = [
+          { result: geminiRetry, source: "gemini" as const },
+          { result: groqRetry, source: "groq" as const }
+        ]
+          .filter(item => item.result !== null)
+          .sort((a, b) => (b.result!.confidence ?? 0) - (a.result!.confidence ?? 0))[0]
 
-        if (bestRetry && bestRetry.confidence > originalConfidence) {
-          return { field, result: bestRetry, source: "groq" as const }
+        if (bestRetry && bestRetry.result && bestRetry.result.confidence > originalConfidence) {
+          return { field, result: bestRetry.result, source: bestRetry.source }
         }
 
         return null
       })
     )
 
-    // Merge improved results back into rawJson
+    // Merge improved results back into rawJson, tracking source
+    const fieldSources: Record<string, "gemini" | "groq"> = {}
     for (const item of retryResults) {
       if (!item) continue
       rawJson[item.field] = item.result
+      fieldSources[item.field] = item.source
     }
   }
 
@@ -246,6 +251,13 @@ export async function twoPassExtract(
     for (const key of Object.keys(validated) as (keyof ValidatedFields)[]) {
       if (key !== "barcode" || !barcodeOverride) {
         validated[key].source = "groq"
+      }
+    }
+  } else {
+    // Apply source information from retry results
+    for (const [field, source] of Object.entries(fieldSources)) {
+      if (field in validated) {
+        (validated as Record<string, ValidatedFieldResult>)[field].source = source
       }
     }
   }
