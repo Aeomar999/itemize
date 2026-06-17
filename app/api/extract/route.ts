@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server"
 import { twoPassExtract } from "@/lib/twoPass"
 
+export const maxDuration = 60 // Allow up to 60 seconds for Gemini/Groq API calls
+
 export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData()
