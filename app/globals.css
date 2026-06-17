@@ -12,6 +12,7 @@
 body {
   color: hsl(var(--foreground));
   background-color: hsl(var(--background));
+  overscroll-behavior-y: none; /* Disable browser's native pull-to-refresh */
 }
 
 ::-webkit-scrollbar {
