@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState, useRef } from "react"
+import { useState, useRef } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { useItemizeStore } from "@/store/useItemizeStore"
 import { IMDBFieldKey } from "@/types/imdb"
