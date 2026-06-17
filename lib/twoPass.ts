@@ -18,7 +18,7 @@ const SingleFieldSchema: Schema = {
 }
 
 const primaryModel = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash-preview-05-20",
+  model: "gemini-3-flash-preview",
   systemInstruction: SYSTEM_INSTRUCTION,
   generationConfig: {
     responseMimeType: "application/json",
@@ -28,7 +28,7 @@ const primaryModel = genAI.getGenerativeModel({
 })
 
 const retryModel = genAI.getGenerativeModel({
-  model: "gemini-2.5-flash-preview-05-20",
+  model: "gemini-3-flash-preview",
   systemInstruction: RETRY_SYSTEM_INSTRUCTION,
   generationConfig: {
     responseMimeType: "application/json",

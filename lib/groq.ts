@@ -2,7 +2,7 @@ import { RawExtractedFields, GeminiFieldResult } from "@/types/imdb"
 import { buildPromptWithBarcode, RETRY_SYSTEM_INSTRUCTION } from "@/lib/prompt"
 
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions"
-const GROQ_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct" // best Groq vision model
+const GROQ_MODEL = "llama-3.2-11b-vision-preview" // valid Groq vision model
 
 function getGroqKey(): string {
   const key = process.env.GROQ_API_KEY
