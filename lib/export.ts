@@ -26,8 +26,12 @@ export function exportRecords(records: IMDBRecord[], format: "xlsx" | "csv") {
   const workbook = XLSX.utils.book_new()
   XLSX.utils.book_append_sheet(workbook, worksheet, "IMDB Data")
 
-  const dateStr = new Date().toISOString().split('T')[0]
-  const filename = format === "csv" ? `predictions_${dateStr}.csv` : `predictions_${dateStr}.xlsx`
+  const now = new Date()
+  const dateStr = now.toISOString().split('T')[0]
+  const timeStr = now.toTimeString().split(' ')[0].replace(/:/g, '-')
+  const timestamp = `${dateStr}_${timeStr}`
+  
+  const filename = `itemize_${timestamp}.${format}`
 
   XLSX.writeFile(workbook, filename, { bookType: format === "csv" ? "csv" : "xlsx" })
 }
