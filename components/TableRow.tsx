@@ -40,6 +40,7 @@ export function TableRow({ record }: Props) {
       const newMedia = { url: URL.createObjectURL(file), name: file.name, type: isVideo ? "video" : "image" }
       addMediaToRecord(record.id, newMedia)
       const allMedia = [...record.media, newMedia]
+      updateRecord(record.id, { status: "processing" })
       try {
         const result = await extractItemizeData(record.id, allMedia)
         updateRecord(record.id, result)
@@ -181,7 +182,7 @@ export function TableRow({ record }: Props) {
             >
               ➕ Media
             </button>
-            <input type="file" ref={fileInputRef} className="hidden" accept="image/*,video/mp4,video/quicktime,video/webm" onChange={handleAddMedia} />
+            <input type="file" ref={fileInputRef} className="hidden" accept="image/*" onChange={handleAddMedia} />
           </div>
         </td>
 

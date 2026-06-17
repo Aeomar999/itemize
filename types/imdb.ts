@@ -3,6 +3,7 @@ export interface FieldValue {
   confidence: number
   isEdited: boolean
   isValid: boolean
+  source?: string
 }
 
 export interface MediaItem {

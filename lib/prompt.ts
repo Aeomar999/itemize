@@ -1,3 +1,5 @@
+import { IMDBFieldKey } from "@/types/imdb"
+
 export const SYSTEM_INSTRUCTION = `
 You are a retail product data extraction specialist. Your job is to analyze product 
 images and extract structured data for an Item Master Database (IMDB).
@@ -127,7 +129,14 @@ Do not attempt to re-read the barcode from the image.`
 }
 
 // Targeted retry prompts for low-confidence fields
-export const FIELD_RETRY_PROMPTS: Record<string, string> = {
+export const FIELD_RETRY_PROMPTS: Record<IMDBFieldKey, string> = {
+  itemName: `
+Focus only on constructing the full descriptive product name.
+Include: brand, weight, packaging type, product type, key variant/flavor, manufacturer name.
+Format: "[BRAND] [WEIGHT] [PACKAGING] [TYPE] [VARIANT/FLAVOR] [MANUFACTURER]"
+All uppercase. Return null if insufficient information.
+`.trim(),
+
   barcode: `
 Focus only on finding the barcode in this image.
 Check every corner and edge of the packaging — barcodes are usually on the back or bottom.
@@ -148,6 +157,14 @@ Focus only on identifying the manufacturer of this product.
 Look for: "Manufactured by", "Produced by", "A product of", or company name near the barcode.
 Use the full company name in uppercase.
 For local/regional brands with no visible parent company, use the brand name.
+`.trim(),
+
+  brand: `
+Focus only on identifying the trade/brand name displayed on the product.
+This is the prominently displayed brand name, uppercase as printed.
+Do not include variant, size, or product type — just the brand name.
+Examples: "BLUE BAND", "MAGGI", "MILO", "LELE"
+Return null if not visible.
 `.trim(),
 
   weight: `
@@ -189,6 +206,13 @@ Return null if no specific variant is labelled.
 Focus only on on-pack promotional offer text.
 Examples: "BUY NOW GHS33", "50% OFF", "BUY 2 GET 1 FREE".
 This must be a specific deal or limited-time offer, not a tagline.
+Return null if none.
+`.trim(),
+
+  addons: `
+Focus only on additional product features or bonus pack contents.
+Examples: "5 FREE ENVELOPE", "SPOON INCLUDED", "1PCS 2G", "FREE SACHET"
+Only populate if the pack explicitly states a bonus item or extra.
 Return null if none.
 `.trim(),
 
