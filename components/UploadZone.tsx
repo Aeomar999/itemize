@@ -1,7 +1,7 @@
 "use client"
 
 import { useRef, useState } from "react"
-import { PhotoIcon, CameraIcon, CloudArrowUpIcon } from "@heroicons/react/24/outline"
+import { PhotoIcon, CameraIcon, CloudArrowUpIcon, VideoCameraIcon } from "@heroicons/react/24/outline"
 import { useItemizeStore } from "@/store/useItemizeStore"
 import { cn } from "@/lib/utils"
 import { ValidatedFields, IMDBFieldKey } from "@/types/imdb"
@@ -28,6 +28,7 @@ function mapApiFieldsToRecord(fields: ValidatedFields): ReturnType<typeof useIte
 export function UploadZone({ isCompressed }: UploadZoneProps) {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const cameraInputRef = useRef<HTMLInputElement>(null)
+  const videoInputRef = useRef<HTMLInputElement>(null)
   const addRecord = useItemizeStore(state => state.addRecord)
   const updateRecord = useItemizeStore(state => state.updateRecord)
   const recalculateNeedsReview = useItemizeStore(state => state.recalculateNeedsReview)
@@ -37,11 +38,11 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
   const [uploadedCount, setUploadedCount] = useState(0)
 
   const processFiles = async (files: FileList | File[]) => {
-    const fileArray = Array.from(files).filter(f => f.type.startsWith("image/"))
+    const fileArray = Array.from(files).filter(f => f.type.startsWith("image/") || f.type.startsWith("video/"))
 
     if (fileArray.length === 0) return
     if (uploadedCount + fileArray.length > 20) {
-      alert("Too many images — maximum 20 per session")
+      alert("Too many files — maximum 20 per session")
       return
     }
 
@@ -49,6 +50,8 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
 
     for (const file of fileArray) {
       let currentId = ""
+      const isVideo = file.type.startsWith("video/")
+      
       try {
         // Upload to Supabase Storage
         const fileExt = file.name.split('.').pop()
@@ -60,7 +63,7 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
 
         const { data: publicUrlData } = await import("@/lib/supabase").then(m => m.supabase.storage.from('media').getPublicUrl(filePath))
         
-        const mediaItem = { url: publicUrlData.publicUrl, name: file.name, type: "image" }
+        const mediaItem = { url: publicUrlData.publicUrl, name: file.name, type: isVideo ? "video" : "image" }
         currentId = addRecord([mediaItem])
         updateRecord(currentId, { status: "processing" })
 
@@ -101,6 +104,7 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
       processFiles(e.target.files)
       if (fileInputRef.current) fileInputRef.current.value = ""
       if (cameraInputRef.current) cameraInputRef.current.value = ""
+      if (videoInputRef.current) videoInputRef.current.value = ""
     }
   }
 
@@ -118,12 +122,13 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
     >
       {isCompressed && isDragging && (
         <div className="absolute inset-0 bg-blue-50/90 flex items-center justify-center z-10">
-          <p className="text-blue-600 font-medium">Drop images to extract</p>
+          <p className="text-blue-600 font-medium">Drop media to extract</p>
         </div>
       )}
 
-      <input type="file" ref={fileInputRef} onChange={handleChange} className="hidden" multiple accept="image/*" />
+      <input type="file" ref={fileInputRef} onChange={handleChange} className="hidden" multiple accept="image/*,video/*" />
       <input type="file" ref={cameraInputRef} onChange={handleChange} className="hidden" accept="image/*" capture="environment" />
+      <input type="file" ref={videoInputRef} onChange={handleChange} className="hidden" accept="video/*" capture="environment" />
 
       <div className={cn("flex items-center", isCompressed ? "flex-col sm:flex-row gap-1 sm:gap-4 text-center sm:text-left" : "flex-col")}>
         {!isCompressed && (
@@ -136,27 +141,34 @@ export function UploadZone({ isCompressed }: UploadZoneProps) {
         )}
         <div>
           <h2 className={cn("font-medium text-slate-900", isCompressed ? "text-base" : "text-lg text-center")}>
-            {!isCompressed && isDragging ? "Drop images to extract" : "Select product images"}
+            {!isCompressed && isDragging ? "Drop media to extract" : "Select product media"}
           </h2>
           <p className={cn("text-slate-500", isCompressed ? "text-sm mt-0.5" : "text-sm mt-2 text-center max-w-sm")}>
-            {isCompressed ? "Add more images to this session" : "Drag and drop files here, or click to browse. We support JPG, PNG, and WEBP."}
+            {isCompressed ? "Add more media to this session" : "Drag and drop files here, or click to browse. We support images and short videos."}
           </p>
         </div>
       </div>
 
-      <div className={cn("flex gap-3 w-full sm:w-auto justify-center", isCompressed ? "" : "mt-6")}>
+      <div className={cn("flex flex-wrap gap-2 sm:gap-3 w-full sm:w-auto justify-center", isCompressed ? "mt-2 sm:mt-0" : "mt-6")}>
         <button
           onClick={(e) => { e.stopPropagation(); fileInputRef.current?.click() }}
           className="px-4 py-2 bg-slate-900 text-white rounded-md text-sm font-medium hover:bg-slate-800 transition-colors whitespace-nowrap"
         >
-          {isCompressed ? "Add Images" : "Browse Files"}
+          {isCompressed ? "Browse" : "Browse Files"}
         </button>
         <button
           onClick={(e) => { e.stopPropagation(); cameraInputRef.current?.click() }}
           className="sm:hidden px-4 py-2 bg-white text-slate-700 rounded-md text-sm font-medium border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-2 whitespace-nowrap"
         >
           <CameraIcon className="w-4 h-4" />
-          {isCompressed ? "Camera" : "Take Photo"}
+          Photo
+        </button>
+        <button
+          onClick={(e) => { e.stopPropagation(); videoInputRef.current?.click() }}
+          className="sm:hidden px-4 py-2 bg-white text-slate-700 rounded-md text-sm font-medium border border-slate-200 hover:bg-slate-50 transition-colors flex items-center gap-2 whitespace-nowrap"
+        >
+          <VideoCameraIcon className="w-4 h-4" />
+          Video
         </button>
       </div>
     </div>
