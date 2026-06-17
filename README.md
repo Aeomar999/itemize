@@ -71,11 +71,11 @@ Itemize is built as a Progressive Web App (PWA), meaning you can install it dire
 ## 📸 Media Gallery
 
 ### Desktop View
-![Desktop Dashboard](../Screeshots/Desktop%20view/Fatala_DT.png)
-![Desktop Capture 1](../Screeshots/Desktop%20view/screenshotter-20260617-114751.png)
-![Desktop Capture 2](../Screeshots/Desktop%20view/screenshotter-20260617-115221.png)
-![Desktop Capture 3](../Screeshots/Desktop%20view/screenshotter-20260617-115331.png)
-![Desktop Capture 4](../Screeshots/Desktop%20view/screenshotter-20260617-115407.png)
+![Desktop Dashboard]()
+![Desktop Capture 1]()
+![Desktop Capture 2]()
+![Desktop Capture 3]()
+![Desktop Capture 4]()
 
 **Desktop Walkthrough Video:**
 <video width="100%" controls>
